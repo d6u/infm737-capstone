@@ -1,0 +1,53 @@
+@import '../bower_components/normalize-scss/normalize';
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: #fafafa;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+.canvas {
+  background-image: linear-gradient(#FD9458, #FC403A);
+}
+
+.axis {
+  path,
+  line {
+    fill: none;
+    stroke: #FFF;
+    shape-rendering: crispEdges;
+  }
+  text {
+    fill: #FFF;
+  }
+
+  &.x text {
+    font-size: 12px;
+  }
+}
+
+.mouseover-bar {
+  fill: transparent;
+}
+
+.data-point:hover .mouseover-bar {
+  fill: rgba(255,255,255,.3);
+}
+
+.connection-line {
+  fill: none;
+  stroke: #FFF;
+  &.dotted {
+    stroke-dasharray: 5, 5;
+  }
+}
+
+.data-bar {
+  fill: #FFF;
+  stroke: none;
+  fill-rule: evenodd;
+}
