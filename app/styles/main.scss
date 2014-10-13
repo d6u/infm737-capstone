@@ -39,9 +39,9 @@ body {
 }
 
 .connection-line {
-  fill: none;
-  stroke: #FFF;
   &.dotted {
+    stroke: #FFF;
+    stroke-width: 2px;
     stroke-dasharray: 5, 5;
   }
 }

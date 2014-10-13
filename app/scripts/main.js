@@ -21,14 +21,14 @@ var temperatures = [
 
 // Constants
 //
-var MAX_DATA_COUNT = 81
+var MAX_DATA_COUNT = 71
   , PADDING = {TOP: 20, RIGHT: 20, BOTTOM: 110, LEFT: 45}
   , WIDTH   = 960
   , HEIGHT  = 400
   , INNER_WIDTH  = WIDTH - PADDING.LEFT - PADDING.RIGHT
   , INNER_HEIGHT = HEIGHT - PADDING.TOP - PADDING.BOTTOM
   , BAR_PADDING  = 1
-  , CIRCLE_STROKE_WIDTH = 1;
+  , CIRCLE_STROKE_WIDTH = 2;
 
 // Helper
 //
@@ -185,9 +185,10 @@ chart.append('g')
   .attr('transform', 'translate(0,'+INNER_HEIGHT+')')
   .call(xAxis)
   .selectAll('text')
-  .attr('transform', function() {
-    return 'translate('+(-this.offsetHeight/2-6)+','+(this.offsetWidth/2+10)+') rotate(-90)';
-  });
+  .style({
+    'text-anchor': 'end'
+  })
+  .attr('transform', 'translate(-13,10) rotate(-90)');
 
 chart.append('g')
   .attr('class', 'y axis')
