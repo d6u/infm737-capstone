@@ -22,7 +22,7 @@ var temperatures = [
 // Constants
 //
 var MAX_DATA_COUNT = 71
-  , PADDING = {TOP: 20, RIGHT: 20, BOTTOM: 110, LEFT: 45}
+  , PADDING = {TOP: 20, RIGHT: 20, BOTTOM: 125, LEFT: 45}
   , WIDTH   = 960
   , HEIGHT  = 400
   , INNER_WIDTH  = WIDTH - PADDING.LEFT - PADDING.RIGHT
@@ -101,6 +101,10 @@ function parseData(raw) {
   return results;
 }
 
+function roundTemperature(v) {
+  return Math.round(v * 10) / 10;
+}
+
 // Chart
 //
 var data = parseData(temperatures);
@@ -130,6 +134,10 @@ yDomain[1] += 1;
 var y = d3.scale.linear()
   .domain(yDomain)
   .range([INNER_HEIGHT, 0]);
+
+var yInverse = d3.scale.linear()
+  .domain([INNER_HEIGHT, 0])
+  .range(yDomain);
 
 var lines = (function(data) {
   var results = []
@@ -164,8 +172,6 @@ var lines = (function(data) {
   return results;
 })(data);
 
-console.log(lines)
-
 var xAxis = d3.svg.axis()
   .scale(x)
   .orient('bottom')
@@ -194,9 +200,27 @@ chart.append('g')
   .attr('class', 'y axis')
   .call(yAxis);
 
+// Line
+chart
+  .append('g')
+  .classed({lines: true})
+  .selectAll('.connection-line')
+  .data(lines)
+  .enter()
+  .append('line')
+  .classed({
+    'connection-line': true,
+    dotted: true
+  })
+  .attr('x1', function(d) {return d.start.x})
+  .attr('y1', function(d) {return d.start.y})
+  .attr('x2', function(d) {return d.end.x})
+  .attr('y2', function(d) {return d.end.y});
+
 // Data Bar
 //
 var dataPoint = chart.append('g')
+  .classed({bars: true})
   .selectAll('.data-point')
   .data(data)
   .enter()
@@ -231,20 +255,132 @@ dataPoint
     }
   });
 
-// Line
-chart
-  .append('g')
-  .selectAll('.connection-line')
-  .data(lines)
-  .enter()
-  .append('line')
-  .classed({
-    'connection-line': true,
-    dotted: true
-  })
-  .attr('x1', function(d) {return d.start.x})
-  .attr('y1', function(d) {return d.start.y})
-  .attr('x2', function(d) {return d.end.x})
-  .attr('y2', function(d) {return d.end.y});
+// Add mouse interactivity
+//
+var canvas = d3.selectAll('.canvas');
+var TOOPTIP_WIDTH       = 30
+  , TOOPTIP_HEIGHT      = 15
+  , TOOPTIP_OFFSET      = 3
+  , TOOPTIP_ARROW_WIDTH = 5;
+
+function calcTooltipTransform(x, y) {
+  return 'translate('+(x - TOOPTIP_WIDTH - TOOPTIP_OFFSET)+','+
+    (y - TOOPTIP_HEIGHT - TOOPTIP_OFFSET)+')';
+}
+
+function makeTooltip(parent, x, y, val) {
+  var tooltip = parent.append('g').classed({tooltip: true});
+
+  tooltip.append('path')
+    .attr('d', function() {
+      var leftTopX      = 0
+        , leftTopY      = 0
+        , rightTopX     = TOOPTIP_WIDTH
+        , rightTopY     = 0
+        , rightBottom1X = TOOPTIP_WIDTH
+        , rightBottom1Y = TOOPTIP_HEIGHT - TOOPTIP_ARROW_WIDTH
+        , rightBottomX  = TOOPTIP_WIDTH + TOOPTIP_OFFSET
+        , rightBottomY  = TOOPTIP_HEIGHT + TOOPTIP_OFFSET
+        , rightBottom2X = TOOPTIP_WIDTH - TOOPTIP_ARROW_WIDTH
+        , rightBottom2Y = TOOPTIP_HEIGHT
+        , leftBottomX   = 0
+        , leftBottomY   = TOOPTIP_HEIGHT;
+      return 'M'+leftTopX+','+leftTopY+
+        'L'+rightTopX+','+rightTopY+
+        'L'+rightBottom1X+','+rightBottom1Y+
+        'L'+rightBottomX+','+rightBottomY+
+        'L'+rightBottom2X+','+rightBottom2Y+
+        'L'+leftBottomX+','+leftBottomY;
+    });
+
+  tooltip.append('text')
+    .attr({
+      'text-anchor': 'middle',
+      x: TOOPTIP_WIDTH / 2,
+      y: TOOPTIP_HEIGHT / 2 + 3
+    })
+    .text(val);
+
+  tooltip.setTransform = function(x, y) {
+    this.attr('transform', calcTooltipTransform(x, y));
+  }
+
+  tooltip.setTransform(x, y);
+
+  tooltip.setVal = function(val) {
+    this.selectAll('text').text(val);
+  }
+
+  tooltip.setVal(val);
+
+  return tooltip;
+}
+
+var cursorLine, cursorTooltip;
+
+canvas.on('mousemove', function() {
+  var coord = d3.mouse(this);
+  var x = coord[0], y = coord[1] - 2; // Adjust for minor offset
+
+  if (PADDING.LEFT < x && x < WIDTH - PADDING.RIGHT &&
+      PADDING.TOP < y && y < HEIGHT - PADDING.BOTTOM) {
+
+    // Mouse move within area of charts
+    if (!cursorLine) {
+      cursorLine = canvas.append('line')
+        .classed({'cursor-line': true, show: true})
+        .attr({
+          x1: PADDING.LEFT,
+          x2: WIDTH - PADDING.RIGHT,
+          y1: y,
+          y2: y
+        });
+    } else {
+      cursorLine.classed({show: true}).attr({y1: y, y2: y});
+    }
+
+    if (!cursorTooltip) {
+      cursorTooltip = makeTooltip(canvas, x, y);
+    }
+
+    cursorTooltip.classed({hide: false});
+    cursorTooltip.setTransform(x, y);
+    cursorTooltip.setVal(roundTemperature(yInverse(y)));
+
+  } else {
+    if (cursorLine) {
+      cursorLine.classed({show: false});
+    }
+    if (cursorTooltip) {
+      cursorTooltip.classed({hide: true});
+    }
+  }
+});
+
+dataPoint.on('mouseover', function(d, i) {
+  var _this = d3.select(this);
+  if (d.type !== 'gap') {
+    this.__tooltip__ = [];
+    if (d.max != null) {
+      this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
+        y(d.max), roundTemperature(d.max)));
+    }
+    if (d.mean != null) {
+      this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
+        y(d.mean), roundTemperature(d.mean)));
+    }
+    if (d.min != null) {
+      this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
+        y(d.min), roundTemperature(d.min)));
+    }
+  }
+})
+.on('mouseout', function() {
+  if (this.__tooltip__) {
+    for (var i = 0; i < this.__tooltip__.length; i++) {
+      this.__tooltip__[i].remove();
+    }
+  }
+});
 
 })(window, jQuery, d3);
