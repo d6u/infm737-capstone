@@ -10,8 +10,8 @@ body {
   color: #333;
 }
 
-.canvas {
-  // background-image: linear-gradient(#FD9458, #FC403A);
+.svg-canvas {
+  // background-image: linear-gradient(#F7F7F7, #D7D7D7);
   background-color: #FFF;
 }
 
@@ -42,18 +42,36 @@ body {
   fill: rgba(0,0,0,.1);
 }
 
-.connection-line {
-  stroke: #000;
-  stroke-width: 2px;
-  &.dotted {
-    stroke-dasharray: 5, 5;
+.temperatures {
+  .data-bar {
+    fill: #007AFF;
+    stroke: none;
+    fill-rule: evenodd;
+  }
+
+  .connection-line {
+    stroke: #007AFF;
+    stroke-width: 2px;
+    &.dotted {
+      stroke-dasharray: 5, 5;
+    }
   }
 }
 
-.data-bar {
-  fill: #1AD6FD;
-  stroke: none;
-  fill-rule: evenodd;
+.pulses {
+  .data-bar {
+    fill: #FF3B30;
+    stroke: none;
+    fill-rule: evenodd;
+  }
+
+  .connection-line {
+    stroke: #FF3B30;
+    stroke-width: 2px;
+    &.dotted {
+      stroke-dasharray: 5, 5;
+    }
+  }
 }
 
 .cursor-line {
