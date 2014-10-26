@@ -11,23 +11,26 @@ body {
 }
 
 .canvas {
-  background-image: linear-gradient(#FD9458, #FC403A);
+  // background-image: linear-gradient(#FD9458, #FC403A);
+  background-color: #FFF;
 }
 
 .axis {
   path,
   line {
     fill: none;
-    stroke: #FFF;
+    stroke: #000;
     shape-rendering: crispEdges;
   }
   text {
-    fill: #FFF;
+    fill: #000;
   }
 
-  &.x text {
-    font-size: 12px;
-    font-family: Consolas, Monaco;
+  &.x, &.y {
+    text {
+      font-size: 12px;
+      font-family: Consolas, Monaco;
+    }
   }
 }
 
@@ -36,26 +39,26 @@ body {
 }
 
 .data-point:hover .mouseover-bar {
-  fill: rgba(255,255,255,.3);
+  fill: rgba(0,0,0,.1);
 }
 
 .connection-line {
+  stroke: #000;
+  stroke-width: 2px;
   &.dotted {
-    stroke: #FFF;
-    stroke-width: 2px;
     stroke-dasharray: 5, 5;
   }
 }
 
 .data-bar {
-  fill: #FFF;
+  fill: #1AD6FD;
   stroke: none;
   fill-rule: evenodd;
 }
 
 .cursor-line {
   &.show {
-    stroke: #FFF;
+    stroke: #000;
     stroke-width: 1px;
   }
 }
