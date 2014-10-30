@@ -387,11 +387,53 @@ var RaptorChart = function (sel, opts) {
                 }
             });
     };
+
+    var cursorLine;
+
+    svg.on('mousemove', function() {
+        var coord = d3.mouse(this);
+        var x = coord[0], y = coord[1] - opts.margin.top; // Adjust for minor offset
+
+        if (opts.margin.left < x && x < opts.margin.left + opts.width &&
+            0 < y && y < opts.height) {
+
+            // Mouse move within area of charts
+            if (!cursorLine) {
+                cursorLine = canvas.append('line')
+                    .classed({'cursor-line': true, show: true})
+                    .attr({
+                        x1: 0,
+                        x2: opts.width,
+                        y1: y,
+                        y2: y
+                    });
+            } else {
+                cursorLine.classed({show: true}).attr({y1: y, y2: y});
+            }
+
+            // if (!cursorTooltip) {
+            //     cursorTooltip = makeTooltip(canvas, x, y);
+            // }
+
+            // cursorTooltip.classed({hide: false});
+            // cursorTooltip.setTransform(x, y);
+            // cursorTooltip.setVal(roundTemperature(yInverse(y)));
+
+        } else {
+            if (cursorLine) {
+                cursorLine.classed({show: false});
+            }
+            // if (cursorTooltip) {
+            //     cursorTooltip.classed({hide: true});
+            // }
+        }
+    });
 }
 
 window.RaptorChart = RaptorChart;
 
 var chart = new RaptorChart('#temperature');
+
 chart.drawData(temperatureData, {
     position: 'left',
     title: 'temperature',
@@ -400,35 +442,17 @@ chart.drawData(temperatureData, {
         return v + '&deg;F';
     }
 });
-// chart.drawData(pulseData, {
-//     position: 'right',
-//     title: 'pulse',
-//     classPrefix: 'pulse-',
-//     labelFormatter: function (v) {
-//         return v;
-//     }
-// });
+
+chart.drawData(pulseData, {
+    position: 'right',
+    title: 'pulse',
+    classPrefix: 'pulse-',
+    labelFormatter: function (v) {
+        return v;
+    }
+});
 
 return;
-
-chart
-    .append('g')
-    .attr('class', 'lines pulses')
-    .attr('transform', 'translate('+(pulseLeft + BAR.WIDTH / 2)+',0)')
-    .selectAll('.connection-line')
-    .data(pulseLines)
-    .enter()
-    .append('line')
-    .classed({
-        'connection-line': true,
-        'dotted': function (d) {
-            return d.type === 'dotted';
-        }
-    })
-    .attr('x1', function(d) {return d.start.x;})
-    .attr('y1', function(d) {return d.start.y;})
-    .attr('x2', function(d) {return d.end.x;})
-    .attr('y2', function(d) {return d.end.y;});
 
 //////
 
@@ -492,47 +516,6 @@ function makeTooltip(parent, x, y, val) {
 
     return tooltip;
 }
-
-var cursorLine, cursorTooltip;
-
-canvas.on('mousemove', function() {
-    var coord = d3.mouse(this);
-    var x = coord[0], y = coord[1] - 2; // Adjust for minor offset
-
-    if (PADDING.LEFT < x && x < WIDTH - PADDING.RIGHT &&
-        PADDING.TOP < y && y < HEIGHT - PADDING.BOTTOM) {
-
-        // Mouse move within area of charts
-        if (!cursorLine) {
-            cursorLine = canvas.append('line')
-                .classed({'cursor-line': true, show: true})
-                .attr({
-                    x1: PADDING.LEFT,
-                    x2: WIDTH - PADDING.RIGHT,
-                    y1: y,
-                    y2: y
-                });
-        } else {
-            cursorLine.classed({show: true}).attr({y1: y, y2: y});
-        }
-
-        if (!cursorTooltip) {
-            cursorTooltip = makeTooltip(canvas, x, y);
-        }
-
-        cursorTooltip.classed({hide: false});
-        cursorTooltip.setTransform(x, y);
-        cursorTooltip.setVal(roundTemperature(yInverse(y)));
-
-    } else {
-        if (cursorLine) {
-            cursorLine.classed({show: false});
-        }
-        if (cursorTooltip) {
-            cursorTooltip.classed({hide: true});
-        }
-    }
-});
 
 dataPoint.on('mouseover', function(d, i) {
     var _this = d3.select(this);
