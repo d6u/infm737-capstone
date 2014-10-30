@@ -386,62 +386,133 @@ var RaptorChart = function (sel, opts) {
                     return d.type === 'dotted';
                 }
             });
+
+        var cursorLine, cursorTooltip1, cursorTooltip2;
+
+        svg.on('mousemove', function() {
+            var coord = d3.mouse(this);
+            var x = coord[0] - opts.margin.left - 1, y = coord[1] - opts.margin.top - 2;
+
+            if (0 < x && x < opts.width &&
+                0 < y && y < opts.height) {
+
+                // Mouse move within area of charts
+                if (!cursorLine) {
+                    cursorLine = canvas.append('line')
+                        .classed({'cursor-line': true, show: true})
+                        .attr({
+                            x1: 0,
+                            x2: opts.width,
+                            y1: y,
+                            y2: y
+                        });
+                } else {
+                    cursorLine.classed({show: true}).attr({y1: y, y2: y});
+                }
+
+                if (!cursorTooltip1) {
+                    cursorTooltip1 = makeTooltip(canvas, x, y);
+                }
+
+                cursorTooltip1.classed({hide: false});
+                cursorTooltip1.setTransform(x - 20, y);
+                cursorTooltip1.setVal(options.labelFormatter(roundTemperature(y1Inverse(y))));
+
+                if (!cursorTooltip2) {
+                    cursorTooltip2 = makeTooltip(canvas, x, y, null, true);
+                }
+
+                cursorTooltip2.classed({hide: false});
+                cursorTooltip2.setTransform(x + 20, y);
+                cursorTooltip2.setVal(roundTemperature(y2Inverse(y)));
+
+            } else {
+                if (cursorLine) {
+                    cursorLine.classed({show: false});
+                }
+                if (cursorTooltip1) {
+                    cursorTooltip1.classed({hide: true});
+                }
+
+                if (cursorTooltip2) {
+                    cursorTooltip2.classed({hide: true});
+                }
+            }
+        });
     };
 
-    var cursorLine;
+    var TOOPTIP_WIDTH       = 40,
+        TOOPTIP_HEIGHT      = 15,
+        TOOPTIP_OFFSET      = 3,
+        TOOPTIP_ARROW_WIDTH = 5;
 
-    svg.on('mousemove', function() {
-        var coord = d3.mouse(this);
-        var x = coord[0], y = coord[1] - opts.margin.top; // Adjust for minor offset
+    function calcTooltipTransform(x, y) {
+        return 'translate('+(x - TOOPTIP_WIDTH - TOOPTIP_OFFSET)+','+
+            (y - TOOPTIP_HEIGHT - TOOPTIP_OFFSET)+')';
+    }
 
-        if (opts.margin.left < x && x < opts.margin.left + opts.width &&
-            0 < y && y < opts.height) {
+    function makeTooltip(parent, x, y, val, isFlip) {
+        var tooltip = parent.append('g').classed({tooltip: true});
 
-            // Mouse move within area of charts
-            if (!cursorLine) {
-                cursorLine = canvas.append('line')
-                    .classed({'cursor-line': true, show: true})
-                    .attr({
-                        x1: 0,
-                        x2: opts.width,
-                        y1: y,
-                        y2: y
-                    });
-            } else {
-                cursorLine.classed({show: true}).attr({y1: y, y2: y});
-            }
+        tooltip.append('path')
+            .attr('d', function() {
+                var leftTopX      = 0,
+                    leftTopY      = 0,
+                    rightTopX     = TOOPTIP_WIDTH,
+                    rightTopY     = 0,
+                    rightBottom1X = TOOPTIP_WIDTH,
+                    rightBottom1Y = TOOPTIP_HEIGHT - TOOPTIP_ARROW_WIDTH,
+                    rightBottomX  = TOOPTIP_WIDTH + TOOPTIP_OFFSET,
+                    rightBottomY  = TOOPTIP_HEIGHT + TOOPTIP_OFFSET,
+                    rightBottom2X = TOOPTIP_WIDTH - TOOPTIP_ARROW_WIDTH,
+                    rightBottom2Y = TOOPTIP_HEIGHT,
+                    leftBottomX   = 0,
+                    leftBottomY   = TOOPTIP_HEIGHT;
+                return 'M'+leftTopX+','+leftTopY+
+                    'L'+rightTopX+','+rightTopY+
+                    'L'+rightBottom1X+','+rightBottom1Y+
+                    'L'+rightBottomX+','+rightBottomY+
+                    'L'+rightBottom2X+','+rightBottom2Y+
+                    'L'+leftBottomX+','+leftBottomY;
+            })
+            .attr('transform', isFlip ?
+                'rotate(180) translate('+(-(TOOPTIP_WIDTH+TOOPTIP_OFFSET)*2)+','+(-(TOOPTIP_HEIGHT+TOOPTIP_OFFSET)*2)+')' :
+                '');
 
-            // if (!cursorTooltip) {
-            //     cursorTooltip = makeTooltip(canvas, x, y);
-            // }
+        tooltip.append('text')
+            .attr({
+                'text-anchor': 'middle',
+                x: TOOPTIP_WIDTH / 2,
+                y: TOOPTIP_HEIGHT / 2 + 3
+            })
+            .attr('transform', isFlip ?
+                'translate('+(TOOPTIP_WIDTH+TOOPTIP_OFFSET+3)+','+(TOOPTIP_HEIGHT+TOOPTIP_OFFSET+3)+')' :
+                '')
+            .text(val);
 
-            // cursorTooltip.classed({hide: false});
-            // cursorTooltip.setTransform(x, y);
-            // cursorTooltip.setVal(roundTemperature(yInverse(y)));
+        tooltip.setTransform = function(x, y) {
+            this.attr('transform', calcTooltipTransform(x, y));
+        };
 
-        } else {
-            if (cursorLine) {
-                cursorLine.classed({show: false});
-            }
-            // if (cursorTooltip) {
-            //     cursorTooltip.classed({hide: true});
-            // }
-        }
-    });
-}
+        tooltip.setTransform(x, y);
+
+        tooltip.setVal = function(val) {
+            this.selectAll('text').text(val);
+        };
+
+        tooltip.setVal(val);
+
+        return tooltip;
+    }
+
+    function roundTemperature(t) {
+        return Math.round(t * 10) / 10;
+    }
+};
 
 window.RaptorChart = RaptorChart;
 
 var chart = new RaptorChart('#temperature');
-
-chart.drawData(temperatureData, {
-    position: 'left',
-    title: 'temperature',
-    classPrefix: 'temperature-',
-    labelFormatter: function (v) {
-        return v + '&deg;F';
-    }
-});
 
 chart.drawData(pulseData, {
     position: 'right',
@@ -452,70 +523,18 @@ chart.drawData(pulseData, {
     }
 });
 
+chart.drawData(temperatureData, {
+    position: 'left',
+    title: 'temperature',
+    classPrefix: 'temperature-',
+    labelFormatter: function (v) {
+        return v + '°F';
+    }
+});
+
 return;
 
 //////
-
-// Add mouse interactivity
-//
-var canvas = d3.selectAll('.svg-canvas');
-var TOOPTIP_WIDTH         = 30
-    , TOOPTIP_HEIGHT      = 15
-    , TOOPTIP_OFFSET      = 3
-    , TOOPTIP_ARROW_WIDTH = 5;
-
-function calcTooltipTransform(x, y) {
-    return 'translate('+(x - TOOPTIP_WIDTH - TOOPTIP_OFFSET)+','+
-        (y - TOOPTIP_HEIGHT - TOOPTIP_OFFSET)+')';
-}
-
-function makeTooltip(parent, x, y, val) {
-    var tooltip = parent.append('g').classed({tooltip: true});
-
-    tooltip.append('path')
-        .attr('d', function() {
-            var leftTopX        = 0
-                , leftTopY      = 0
-                , rightTopX     = TOOPTIP_WIDTH
-                , rightTopY     = 0
-                , rightBottom1X = TOOPTIP_WIDTH
-                , rightBottom1Y = TOOPTIP_HEIGHT - TOOPTIP_ARROW_WIDTH
-                , rightBottomX  = TOOPTIP_WIDTH + TOOPTIP_OFFSET
-                , rightBottomY  = TOOPTIP_HEIGHT + TOOPTIP_OFFSET
-                , rightBottom2X = TOOPTIP_WIDTH - TOOPTIP_ARROW_WIDTH
-                , rightBottom2Y = TOOPTIP_HEIGHT
-                , leftBottomX   = 0
-                , leftBottomY   = TOOPTIP_HEIGHT;
-            return 'M'+leftTopX+','+leftTopY+
-                'L'+rightTopX+','+rightTopY+
-                'L'+rightBottom1X+','+rightBottom1Y+
-                'L'+rightBottomX+','+rightBottomY+
-                'L'+rightBottom2X+','+rightBottom2Y+
-                'L'+leftBottomX+','+leftBottomY;
-        });
-
-    tooltip.append('text')
-        .attr({
-            'text-anchor': 'middle',
-            x: TOOPTIP_WIDTH / 2,
-            y: TOOPTIP_HEIGHT / 2 + 3
-        })
-        .text(val);
-
-    tooltip.setTransform = function(x, y) {
-        this.attr('transform', calcTooltipTransform(x, y));
-    };
-
-    tooltip.setTransform(x, y);
-
-    tooltip.setVal = function(val) {
-        this.selectAll('text').text(val);
-    };
-
-    tooltip.setVal(val);
-
-    return tooltip;
-}
 
 dataPoint.on('mouseover', function(d, i) {
     var _this = d3.select(this);
