@@ -6,7 +6,7 @@ var defaultOpt = {
         top: 20,
         right: 50,
         bottom: 120,
-        left: 50
+        left: 60
     },
     width: 800,
     height: 300,
@@ -304,11 +304,16 @@ var RaptorChart = function (sel, opts) {
             y1.domain(yDomain1);
             y1Inverse.range(yDomain1);
 
+            yAxis1.tickFormat(function(d, i) {
+                return options.labelFormatter(d);
+            })
+
             canvas.append('g')
                 .attr({
                     'class': pf+'y '+pf+'axis'
                 })
                 .call(yAxis1);
+
         } else {
             var yDomain2 = d3.extent(data, function(d) {
                 return Number(d.val);
