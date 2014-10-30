@@ -5,17 +5,18 @@ html, body {
 }
 
 body {
-  background: #fafafa;
+  background: #BDBEC2;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: #333;
 }
 
-.svg-canvas {
-  // background-image: linear-gradient(#F7F7F7, #D7D7D7);
+// ----------------------------------------
+
+.raptor-svg {
   background-color: #FFF;
 }
 
-.axis {
+.raptor-axis {
   path,
   line {
     fill: none;
@@ -26,7 +27,7 @@ body {
     fill: #000;
   }
 
-  &.x, &.y {
+  &.raptor-x, &.raptor-y {
     text {
       font-size: 12px;
       font-family: Consolas, Monaco;
@@ -42,20 +43,10 @@ body {
   fill: rgba(0,0,0,.1);
 }
 
-.temperatures {
-  .data-bar {
-    fill: #007AFF;
-    stroke: none;
-    fill-rule: evenodd;
-  }
-
-  .connection-line {
-    stroke: #007AFF;
-    stroke-width: 2px;
-    &.dotted {
-      stroke-dasharray: 5, 5;
-    }
-  }
+.raptor-data-point-bar {
+  fill: #007AFF;
+  stroke: none;
+  fill-rule: evenodd;
 }
 
 .pulses {
