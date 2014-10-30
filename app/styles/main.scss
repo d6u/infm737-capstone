@@ -35,35 +35,34 @@ body {
   }
 }
 
-.mouseover-bar {
-  fill: transparent;
-}
-
-.data-point:hover .mouseover-bar {
-  fill: rgba(0,0,0,.1);
-}
-
 .raptor-data-point-bar {
-  fill: #007AFF;
   stroke: none;
   fill-rule: evenodd;
-}
-
-.pulses {
-  .data-bar {
+  &.raptor-temperature-data-point-bar {
+    fill: #007AFF;
+  }
+  &.raptor-pulse-data-point-bar {
     fill: #FF3B30;
-    stroke: none;
-    fill-rule: evenodd;
-  }
-
-  .connection-line {
-    stroke: #FF3B30;
-    stroke-width: 2px;
-    &.dotted {
-      stroke-dasharray: 5, 5;
-    }
   }
 }
+
+.raptor-data-line {
+  stroke-width: 2px;
+  &.dotted {
+    stroke-dasharray: 5, 5;
+  }
+  &.raptor-temperature-data-line {
+    stroke: #007AFF;
+  }
+  &.raptor-pulse-data-line {
+    stroke: #FF3B30;
+  }
+}
+
+
+
+
+
 
 .cursor-line {
   &.show {

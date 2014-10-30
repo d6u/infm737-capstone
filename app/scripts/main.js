@@ -4,9 +4,9 @@
 var defaultOpt = {
     margin: {
         top: 20,
-        right: 45,
+        right: 50,
         bottom: 120,
-        left: 45
+        left: 50
     },
     width: 800,
     height: 300,
@@ -26,7 +26,10 @@ function getDateStrAsNum(date) {
             padStr(date.getUTCMonth() + 1, 2) +
             padStr(date.getUTCDate(), 2);
     return Number(str);
-    // return Math.ceil(date.getTime() / 1000 / 60 / 60 / 24);
+}
+
+function getUnixDay(date) {
+    return Math.ceil(date.getTime() / 1000 / 60 / 60 / 24);
 }
 
 var parseDate = d3.time.format('%Y%m%d %Z').parse;
@@ -45,8 +48,8 @@ function padStr(n, width, z) {
 var _map = Array.prototype.map;
 
 function uniq(arr, isSame) {
-    arr.sort();
-    var result = [arr[0]], prev = arr[0];
+    var result = [arr[0]],
+        prev = arr[0];
     for (var i = 1; i < arr.length; i++) {
         if (!isSame(prev, arr[i])) {
             result.push(arr[i]);
@@ -66,7 +69,7 @@ function parseDataSummary(data) {
     prev = data[0];
 
     result.push({
-        day:       prev.date.toDateString(),
+        date:      prev.date,
         readings: [prev]
     });
 
@@ -76,13 +79,8 @@ function parseDataSummary(data) {
             if (getDateStrAsNum(prev.date) === getDateStrAsNum(d.date)) {
                 result[result.length - 1].readings.push(d);
             } else {
-                // if (getDateStrAsNum(d.date) - getDateStrAsNum(prev.date) > 1) {
-                //     for (j = 0; j < 3; j++) {
-                //         result.push({type: 'gap'});
-                //     }
-                // }
                 result.push({
-                    day:       d.date.toDateString(),
+                    date:       d.date,
                     readings: [d]
                 });
             }
@@ -107,7 +105,61 @@ var RaptorChart = function (sel, opts) {
     this.opts = opts = _extend(true, {}, defaultOpt, opts);
     this.sel = sel;
 
+    this.dataArr = [];
+    this.dates = [];
+
     var _this = this;
+
+    function getXAxisDates() {
+        var prev = _this.dates[0],
+            i = 1,
+            result = [prev];
+        while (i < _this.dates.length) {
+            if (getUnixDay(_this.dates[i]) - getUnixDay(prev) > 1) {
+                result.push({type: 'gap'});
+                result.push({type: 'gap'});
+                result.push({type: 'gap'});
+            }
+            result.push(_this.dates[i]);
+            prev = _this.dates[i];
+            i++;
+        }
+        return result;
+    }
+
+    function parseLine(data, x, y) {
+        var result = [],
+            prev = data[0],
+            prevIndex = 0,
+            type = 'solid',
+            d,
+            xCoord1,
+            xCoord2;
+
+        for (var i = 1; i < data.length; i++) {
+            d = data[i];
+            if (getDateStrAsNum(d.date) - getDateStrAsNum(prev.date) > 1) {
+                type = 'dotted';
+            }
+            xCoord1 = getXAxisDates().indexOf(prevIndex) === -1 ? x(getDateStrAsNum(prev.date)) : x(prevIndex);
+            xCoord2 = getXAxisDates().indexOf(i) === -1 ? x(getDateStrAsNum(d.date)) : x(i);
+            result.push({
+                start: {
+                    x: xCoord1,
+                    y: y(prev.mean)
+                },
+                end: {
+                    x: xCoord2,
+                    y: y(d.mean)
+                },
+                type: type
+            });
+            type = 'solid';
+            prev = d;
+            prevIndex = i;
+        }
+        return result;
+    }
 
     var pf  = opts.classPrefix;
     var svg = this.svg = d3.select(sel)
@@ -124,9 +176,6 @@ var RaptorChart = function (sel, opts) {
             'transform': 'translate('+opts.margin.left+','+opts.margin.top+')'
         });
 
-    this.dates = [];
-    this.dataArr = [];
-
     var x  = this.x  = d3.scale.ordinal().rangeBands([0, opts.width], 0, 0.5);
     var y1 = this.y1 = d3.scale.linear().range([opts.height, 0]);
     var y2 = this.y2 = d3.scale.linear().range([opts.height, 0]);
@@ -137,8 +186,8 @@ var RaptorChart = function (sel, opts) {
         .scale(x)
         .orient('bottom')
         .tickFormat(function(d, i) {
-            if (_this.dates[i] !== undefined) {
-                return _this.dates[i].toDateString();
+            if (getXAxisDates()[i].type === undefined) {
+                return getXAxisDates()[i].toDateString();
             }
         });
 
@@ -159,10 +208,18 @@ var RaptorChart = function (sel, opts) {
         .ticks(10);
 
     function getXDomain() {
-        var length = Math.min(Math.ceil(opts.maxColumns / _this.dataArr.length), _this.dates.length);
-        var arr = [];
-        for (var i = 0; i < length; i++) {
-            arr.push(i);
+        var xAxisDates = getXAxisDates(),
+            length = Math.min(Math.ceil(opts.maxColumns / _this.dataArr.length), xAxisDates.length),
+            arr = new Array(length),
+            i = arr.length - 1,
+            j = xAxisDates.length - 1;
+        for (; i >= 0; i--) {
+            if (xAxisDates[j].type === undefined) {
+                arr[i] = getDateStrAsNum(xAxisDates[j]);
+            } else {
+                arr[i] = i;
+            }
+            j -= 1;
         }
         return arr;
     }
@@ -234,29 +291,52 @@ var RaptorChart = function (sel, opts) {
             return d.date;
         }));
 
-        var yDomain1 = d3.extent(data, function(d) {
-            return Number(d.val);
-        }).sort(function (a, b) {
-            return a - b;
-        });
-        var rangeY = yDomain1[1] - yDomain1[0];
-        yDomain1[0] -= rangeY * 0.1;
-        yDomain1[1] += rangeY * 0.1;
+        if (options.position === 'left') {
+            var yDomain1 = d3.extent(data, function(d) {
+                return Number(d.val);
+            }).sort(function (a, b) {
+                return a - b;
+            });
+            var rangeY = yDomain1[1] - yDomain1[0];
+            yDomain1[0] -= rangeY * 0.1;
+            yDomain1[1] += rangeY * 0.1;
 
-        y1.domain(yDomain1);
-        y1Inverse.range(yDomain1);
+            y1.domain(yDomain1);
+            y1Inverse.range(yDomain1);
 
-        canvas.append('g')
-            .attr({
-                'class': pf+'y '+pf+'axis'
-            })
-            .call(yAxis1);
+            canvas.append('g')
+                .attr({
+                    'class': pf+'y '+pf+'axis'
+                })
+                .call(yAxis1);
+        } else {
+            var yDomain2 = d3.extent(data, function(d) {
+                return Number(d.val);
+            }).sort(function (a, b) {
+                return a - b;
+            });
+            var rangeY = yDomain2[1] - yDomain2[0];
+            yDomain2[0] -= rangeY * 0.1;
+            yDomain2[1] += rangeY * 0.1;
+
+            y2.domain(yDomain2);
+            y2Inverse.range(yDomain2);
+
+            canvas.append('g')
+                .attr({
+                    'class': pf+'y '+pf+'axis',
+                    'transform': 'translate('+opts.width+',0)'
+                })
+                .call(yAxis2);
+        }
+
+        var y = options.position === 'left' ? y1 : y2;
 
         // Data Bar
         var dataPoints = canvas.append('g')
             .attr({
-                'class': pf+'data-group '+pf+options.classPrefix+'data-group'
-                // 'transform': 'translate(0,0)'
+                'class': pf+'data-group '+pf+options.classPrefix+'data-group',
+                'transform': 'translate('+(x.rangeBand() / 2)+',0)'
             })
             .selectAll('.'+pf+'data-point')
             .data(parseDataSummary(data))
@@ -265,7 +345,11 @@ var RaptorChart = function (sel, opts) {
             .attr({
                 'class': pf+'data-point '+pf+options.classPrefix+'data-point',
                 'transform': function (d, i) {
-                    return 'translate('+(x(i) + x.rangeBand() / 2)+',0)';
+                    if (getXAxisDates().indexOf(i) === -1) {
+                        return 'translate('+x(getDateStrAsNum(d.date))+',0)';
+                    } else {
+                        return 'translate('+x(i)+',0)';
+                    }
                 }
             });
 
@@ -274,7 +358,32 @@ var RaptorChart = function (sel, opts) {
             .attr({
                 'class': pf+'data-point-bar '+pf+options.classPrefix+'data-point-bar',
                 'd': function (d, i) {
-                    return getPathForDataPoint(d, i, y1);
+                    return getPathForDataPoint(d, i, y);
+                }
+            });
+
+        var lines = parseLine(parseDataSummary(data), x, y);
+
+        canvas
+            .append('g')
+            .attr({
+                'class': pf+'data-lines '+pf+options.classPrefix+'data-lines',
+                'transform': 'translate('+(x.rangeBand() / 2)+',0)'
+            })
+            .selectAll('.'+pf+'data-line')
+            .data(lines)
+            .enter()
+            .append('line')
+            .attr({
+                'class': pf+'data-line '+pf+options.classPrefix+'data-line',
+                'x1': function(d) {return d.start.x;},
+                'y1': function(d) {return d.start.y;},
+                'x2': function(d) {return d.end.x;},
+                'y2': function(d) {return d.end.y;}
+            })
+            .classed({
+                'dotted': function (d) {
+                    return d.type === 'dotted';
                 }
             });
     };
@@ -291,138 +400,16 @@ chart.drawData(temperatureData, {
         return v + '&deg;F';
     }
 });
-// chart.drawData(pulseData);
+// chart.drawData(pulseData, {
+//     position: 'right',
+//     title: 'pulse',
+//     classPrefix: 'pulse-',
+//     labelFormatter: function (v) {
+//         return v;
+//     }
+// });
 
 return;
-
-/**
- * Remove data point with no temperature and no pulse data,
- * parse temperature and pulse into number,
- * parse date string inte date object,
- * and return a sorted clone of the new data points by it's date with
- * ASC order.
- *
- * @param  {Array} original
- * @return {Array}
- */
-function cleanVitalData(original) {
-    var result = [], i, d;
-    for (i = 0; i < original.length; i++) {
-        d = original[i];
-        if (d.temperature != null && d.pulse != null) {
-            result.push(d);
-        }
-        if (d.temperature != null) {
-            d.temperature = Number(d.temperature);
-        }
-        if (d.pulse != null) {
-            d.pulse = Number(d.pulse);
-        }
-    }
-    return clone(result).map(function (d) {
-        d.date = parseDate(d.datetime);
-        d.datetime = null;
-        return d;
-    }).sort(function (a, b) {
-        return a.date.getDateStrAsNum() - b.date.getDateStrAsNum();
-    });
-}
-
-
-
-function temperatureGetter(d) {
-    return d.temperature;
-}
-
-function pulseGetter(d) {
-    return d.pulse;
-}
-
-function roundTemperature(v) {
-    return Math.round(v * 10) / 10;
-}
-
-
-
-// Chart
-//
-var vitalsClean  = cleanVitalData(vitals);
-var temperatures = parseDataSummary(vitalsClean, temperatureGetter);
-var pulses       = parseDataSummary(vitalsClean, pulseGetter);
-
-///////
-
-
-
-function parseLine(data, groupIndex) {
-    var result = [],
-        prev = data[0],
-        prevIndex = 0,
-        type = 'solid',
-        d;
-    var yScale = groupIndex === 0 ? y : y2;
-
-    for (var i = 1; i < data.length; i++) {
-        d = data[i];
-        if (d.type === 'gap') {
-            type = 'dotted';
-        } else {
-            result.push({
-                start: {
-                    x: x(prevIndex),
-                    y: yScale(prev.mean)
-                },
-                end: {
-                    x: x(i),
-                    y: yScale(d.mean)
-                },
-                type: type
-            });
-            type = 'solid';
-            prev = d;
-            prevIndex = i;
-        }
-    }
-    return result;
-}
-
-var temperatureLines = parseLine(temperatures, 0);
-var pulseLines       = parseLine(pulses, 1);
-
-///////
-
-
-chart.append('g')
-    .attr('class', 'y axis')
-    .attr('transform', 'translate('+INNER_WIDTH+',0)')
-    .call(yAxis2);
-
-// Line
-//
-// var temperatureLeft = (x.rangeBand() - BAR.WIDTH * NUM_DATA_GROUP - BAR.INNER_MARGIN * (NUM_DATA_GROUP - 1)) / 2;
-// var pulseLeft = temperatureLeft + BAR.WIDTH + BAR.INNER_MARGIN;
-
-var temperatureLeft = (x.rangeBand() - BAR.WIDTH) / 2;
-var pulseLeft       = (x.rangeBand() - BAR.WIDTH) / 2;
-
-chart
-    .append('g')
-    .attr('class', 'lines temperatures')
-    .attr('transform', 'translate('+(temperatureLeft + BAR.WIDTH / 2)+',0)')
-    .selectAll('.connection-line')
-    .data(temperatureLines)
-    .enter()
-    .append('line')
-    .classed({
-        'connection-line': true,
-        'dotted': function (d) {
-            return d.type === 'dotted';
-        }
-    })
-    .attr('x1', function(d) {return d.start.x;})
-    .attr('y1', function(d) {return d.start.y;})
-    .attr('x2', function(d) {return d.end.x;})
-    .attr('y2', function(d) {return d.end.y;});
 
 chart
     .append('g')
