@@ -71,7 +71,7 @@ function parseDate(str) {
  * @param  {Boolean}       isNum - if true, convert value to number, default true
  * @return {Array} a simpler clone of original data
  */
-function parseData(data, key, isNum) {
+function parseData(data, key) {
     var cloneData = clone(data);
 
     var result = [], i, d, o, n;
@@ -79,10 +79,14 @@ function parseData(data, key, isNum) {
     for (i = 0; i < cloneData.length; i++) {
         d = cloneData[i];
         if (d[key] != null) {
-            if (d.datetime == null) throw new Error('requires datetime to parse date');
+            if (d.datetime == null) {
+                throw new Error('requires datetime to parse date');
+            }
             o = {date: parseDate(d.datetime)};
             n = Number(d[key]);
-            if (n !== n) throw new Error(JSON.stringify(d[key])+' is not a number');
+            if (n !== n) {
+                throw new Error(JSON.stringify(d[key])+' is not a number');
+            }
             o.val = n;
             result.push(o);
         }

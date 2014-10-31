@@ -2,9 +2,7 @@
 'use strict';
 
 window.RaptorChart = (function () {
-    var _extend   = $.extend,
-        parseDate = d3.time.format('%Y%m%d %Z').parse,
-        _map      = Array.prototype.map;
+    var _extend   = $.extend;
 
     var defaultOpt = {
         margin: {
@@ -23,38 +21,8 @@ window.RaptorChart = (function () {
         classPrefix: 'raptor-'
     };
 
-    function getDateStrAsNum(date) {
-        return Number('' + date.getUTCFullYear() + padStr(date.getUTCMonth() + 1, 2) + padStr(date.getUTCDate(), 2));
-    }
-
-    function getUnixDay(date) {
-        return Math.ceil(date.getTime() / 1000 / 60 / 60 / 24);
-    }
-
-    function getDateFromDateStr(datetamp) {
-        return parseDate(padStr(datetamp, 8) + ' +0000');
-    }
-
-    function padStr(n, width, z) {
-        z = z || '0';
-        n = n + '';
-        return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
-    }
-
-    function uniq(arr, isSame) {
-        var result = [arr[0]],
-            prev = arr[0];
-        for (var i = 1; i < arr.length; i++) {
-            if (!isSame(prev, arr[i])) {
-                result.push(arr[i]);
-                prev = arr[i];
-            }
-        }
-        return result;
-    }
-
     function parseDataSummary(data) {
-        var result = [], prev, i, d, j, r;
+        var result = [], prev, i, d, r;
 
         function propertyGetter(d) {
             return d.val;
@@ -69,7 +37,7 @@ window.RaptorChart = (function () {
 
         for (i = 1; i < data.length; i++) {
             d = data[i];
-            if (getDateStrAsNum(prev.date) === getDateStrAsNum(d.date)) {
+            if (prev.date.getDateStrAsNum() === d.date.getDateStrAsNum()) {
                 result[result.length - 1].readings.push(d);
             } else {
                 result.push({
@@ -94,10 +62,6 @@ window.RaptorChart = (function () {
         return 'translate(' + x + ',' + y + ')';
     }
 
-    function isArr(obj) {
-        return Object.prototype.toString.call(obj) === '[object Array]';
-    }
-
     // (String: prefixes ...) -> (String: classNames ...) -> String
     function prefixClass() {
         var prefixes = [], aggregator = '';
@@ -113,15 +77,37 @@ window.RaptorChart = (function () {
                 }
             }
             return result.join(' ');
-        }
+        };
     }
 
+    Date.prototype.getDateStr = function () {
+        function padStr(n, w, z) {
+            z = z || '0';
+            n = n + '';
+            return n.length >= w ? n : new Array(w - n.length + 1).join(z) + n;
+        }
+        return '' + this.getUTCFullYear() + padStr(this.getUTCMonth() + 1, 2) + padStr(this.getUTCDate(), 2);
+    };
+
+    Date.prototype.getDateStrAsNum = function () {
+        return Number(this.getDateStr());
+    };
+
+    Date.prototype.getUnixDay = function () {
+        return Math.ceil(this.getTime() / 1000 / 60 / 60 / 24);
+    };
+
+    Date.parseDateStr = function (datetamp) {
+        var parseDate = d3.time.format('%Y%m%d %Z').parse;
+        return parseDate(datetamp + ' +0000');
+    };
+
     return function (sel, opts) {
-        opts         = opts || {};
-        this.opts    = opts = _extend(true, {}, defaultOpt, opts);
-        this.sel     = sel;
-        this.dataArr = [];
-        this.dates   = [];
+        opts             = opts || {};
+        this.opts        = opts = _extend(true, {}, defaultOpt, opts);
+        this.sel         = sel;
+        this.summaryData = {};
+        this.dates       = [];
 
         var _this  = this;
         var pf     = opts.classPrefix;
@@ -139,6 +125,16 @@ window.RaptorChart = (function () {
             });
 
         var x  = d3.scale.ordinal().rangeBands([0, opts.width], 0, 0.5);
+        x.fromDate = function (date) {
+            var xDomain = x.domain(), d;
+            for (var i = 0; i < xDomain.length; i++) {
+                d = xDomain[i];
+                if (d.toDateString && d.getDateStr() === date.getDateStr()) {
+                    return this(d);
+                }
+            }
+        };
+
         var y1 = d3.scale.linear().range([opts.height, 0]);
         var y2 = d3.scale.linear().range([opts.height, 0]);
         var y1Inverse = d3.scale.linear().domain([opts.height, 0]);
@@ -147,9 +143,9 @@ window.RaptorChart = (function () {
         var xAxis = d3.svg.axis()
             .scale(x)
             .orient('bottom')
-            .tickFormat(function(d, i) {
-                if (getXAxisDates()[i].type === undefined) {
-                    return getXAxisDates()[i].toDateString();
+            .tickFormat(function(d) {
+                if (d.toDateString) {
+                    return d.toDateString();
                 }
             });
 
@@ -169,39 +165,22 @@ window.RaptorChart = (function () {
             .orient('right')
             .ticks(10);
 
-        function getXAxisDates() {
-            var prev = _this.dates[0],
-                i = 1,
-                result = [prev];
-            while (i < _this.dates.length) {
-                if (getUnixDay(_this.dates[i]) - getUnixDay(prev) > 1) {
-                    result.push({type: 'gap'});
-                    result.push({type: 'gap'});
-                    result.push({type: 'gap'});
-                }
-                result.push(_this.dates[i]);
-                prev = _this.dates[i];
-                i++;
-            }
-            return result;
-        }
-
-        function parseLine(data, x, y) {
+        function parseLine(summary, x, y) {
             var result = [],
-                prev = data[0],
+                prev = summary[0],
                 prevIndex = 0,
                 type = 'solid',
                 d,
                 xCoord1,
                 xCoord2;
 
-            for (var i = 1; i < data.length; i++) {
-                d = data[i];
-                if (getDateStrAsNum(d.date) - getDateStrAsNum(prev.date) > 1) {
+            for (var i = 1; i < summary.length; i++) {
+                d = summary[i];
+                if (d.date.getUnixDay() - prev.date.getUnixDay() > 1) {
                     type = 'dotted';
                 }
-                xCoord1 = getXAxisDates().indexOf(prevIndex) === -1 ? x(getDateStrAsNum(prev.date)) : x(prevIndex);
-                xCoord2 = getXAxisDates().indexOf(i) === -1 ? x(getDateStrAsNum(d.date)) : x(i);
+                xCoord1 = x.fromDate(prev.date);
+                xCoord2 = x.fromDate(d.date);
                 result.push({
                     start: {
                         x: xCoord1,
@@ -220,30 +199,13 @@ window.RaptorChart = (function () {
             return result;
         }
 
-        function getXDomain() {
-            var xAxisDates = getXAxisDates(),
-                length = Math.min(Math.ceil(opts.maxColumns / _this.dataArr.length), xAxisDates.length),
-                arr = new Array(length),
-                i = arr.length - 1,
-                j = xAxisDates.length - 1;
-            for (; i >= 0; i--) {
-                if (xAxisDates[j].type === undefined) {
-                    arr[i] = getDateStrAsNum(xAxisDates[j]);
-                } else {
-                    arr[i] = i;
-                }
-                j -= 1;
-            }
-            return arr;
-        }
-
         /**
          *
          * @param  {Object} d {mean: Number, max: Number, min: Number}
          * @param  {Number} i index
          * @return {String}   string of path
          */
-        function getPathForDataPoint(d, i, y) {
+        function getPathForDataPoint(d, y) {
             var w1 = opts.graph.outterRadius,
                 w2 = opts.graph.innerRadius;
             return 'M'+(-w1)+' '+y(d.max)+
@@ -256,142 +218,147 @@ window.RaptorChart = (function () {
         }
 
         function mergeDates (dates) {
+            /**
+             * @return {Array} [Date, 1, 2, 3, Date, Date, 6, 7, 8, Date]
+             */
+            function getXDomain(dates) {
+                var prev   = dates[0],
+                    result = [prev],
+                    j = 1;
+                for (var i = 1; i < dates.length; i++) {
+                    if (dates[i].getUnixDay() - prev.getUnixDay() > 1) {
+                        result.push(j++);
+                        result.push(j++);
+                        result.push(j++);
+                    }
+                    result.push(dates[i]);
+                    prev = dates[i];
+                    j += 1;
+                }
+                return result;
+            }
+
             var t1, t2;
 
             for (var i = 0; i < _this.dates.length; i++) {
-                t1 = getDateStrAsNum(_this.dates[i]);
-                t2 = getDateStrAsNum(dates[0]);
+                t1 = _this.dates[i].getDateStrAsNum();
+                t2 = dates[0].getDateStrAsNum();
                 if (t2 < t1) {
-                    t1.splice(i, 0, getDateFromDateStr(t2));
+                    t1.splice(i, 0, Date.parseDateStr(t2));
                     dates.shift();
                 } else if (t2 === t1) {
                     dates.shift();
                 }
             }
 
-            _this.dates = uniq(_this.dates.concat(dates.map(function (d) {
-                return getDateFromDateStr(getDateStrAsNum(d));
-            })), function (a, b) {
-                return getDateStrAsNum(a) === getDateStrAsNum(b);
-            });
+            _this.dates = _this.dates.concat(
+                dates.map(function (d) {
+                    return Date.parseDateStr(d.getDateStr());
+                })
+            );
 
-            // Update x axis
-            x.domain(getXDomain());
+            x.domain(getXDomain(_this.dates));
             xAxisG.transition().duration(300).call(xAxis);
             xAxisG.selectAll('text').style({'text-anchor': ''});
         }
 
-        /**
-         * Drew the data onto the chart
-         * @param  {Array}  data
-         * @param  {Object} options
-         * @return {}
-         */
         this.drawData = function (data, options) {
             data.sort(function (a, b) {
-                return getDateStrAsNum(a.date) - getDateStrAsNum(b.date);
+                return a.date.getDateStrAsNum() - b.date.getDateStrAsNum();
             });
 
             var summary = parseDataSummary(data);
+            this.summaryData[options.id] = summary;
 
             mergeDates(summary.map(function (d) {
                 return d.date;
             }));
 
-            if (options.position === 'left') {
-                var yDomain1 = d3.extent(data, function(d) {
+            function parseYScale(position, data, y, yInverse, yAxis, canvas) {
+
+                function addDomainMargin(domain) {
+                    var range = domain[1] - domain[0];
+                    domain[0] -= range * 0.1;
+                    domain[1] += range * 0.1;
+                    return domain;
+                }
+
+                var yDomain = d3.extent(data, function(d) {
                     return Number(d.val);
                 }).sort(function (a, b) {
                     return a - b;
                 });
-                var rangeY = yDomain1[1] - yDomain1[0];
-                yDomain1[0] -= rangeY * 0.1;
-                yDomain1[1] += rangeY * 0.1;
 
-                y1.domain(yDomain1);
-                y1Inverse.range(yDomain1);
+                addDomainMargin(yDomain);
 
-                yAxis1.tickFormat(function(d, i) {
+                y.domain(yDomain);
+                yInverse.range(yDomain);
+
+                yAxis.tickFormat(function(d) {
                     return options.labelFormatter(d);
-                })
-
-                canvas.append('g')
-                    .attr({
-                        'class': pf+'y '+pf+'axis'
-                    })
-                    .call(yAxis1);
-
-            } else {
-                var yDomain2 = d3.extent(data, function(d) {
-                    return Number(d.val);
-                }).sort(function (a, b) {
-                    return a - b;
                 });
-                var rangeY = yDomain2[1] - yDomain2[0];
-                yDomain2[0] -= rangeY * 0.1;
-                yDomain2[1] += rangeY * 0.1;
-
-                y2.domain(yDomain2);
-                y2Inverse.range(yDomain2);
 
                 canvas.append('g')
                     .attr({
-                        'class': pf+'y '+pf+'axis',
-                        'transform': 'translate('+opts.width+',0)'
+                        'class': mainPf('y', 'axis', 'axis-' + position),
+                        'transform': position === 'right' ? translateStr(opts.width, 0) : null
                     })
-                    .call(yAxis2);
+                    .call(yAxis);
             }
 
-            var y = options.position === 'left' ? y1 : y2;
+            var y, groupPf = prefixClass(pf, options.classPrefix);
 
-            // Data Bar
+            if (options.position === 'left') {
+                parseYScale(options.position, data, y1, y1Inverse, yAxis1, canvas);
+                y = y1;
+            } else {
+                parseYScale(options.position, data, y2, y2Inverse, yAxis2, canvas);
+                y = y2;
+            }
+
             var dataPoints = canvas.append('g')
                 .attr({
-                    'class': pf+'data-group '+pf+options.classPrefix+'data-group',
-                    'transform': 'translate('+(x.rangeBand() / 2)+',0)'
+                    'class':     groupPf('data-group'),
+                    'transform': translateStr(x.rangeBand() / 2, 0)
                 })
-                .selectAll('.'+pf+'data-point')
-                .data(parseDataSummary(data))
+                .selectAll('.' + pf + 'data-point')
+                .data(summary)
                 .enter()
                 .append('g')
                 .attr({
-                    'class': pf+'data-point '+pf+options.classPrefix+'data-point',
-                    'transform': function (d, i) {
-                        if (getXAxisDates().indexOf(i) === -1) {
-                            return 'translate('+x(getDateStrAsNum(d.date))+',0)';
-                        } else {
-                            return 'translate('+x(i)+',0)';
-                        }
+                    'class':     groupPf('data-point'),
+                    'transform': function (d) {
+                        return translateStr(x.fromDate(d.date), 0);
                     }
                 });
 
             dataPoints
                 .append('path')
                 .attr({
-                    'class': pf+'data-point-bar '+pf+options.classPrefix+'data-point-bar',
-                    'd': function (d, i) {
-                        return getPathForDataPoint(d, i, y);
+                    'class': groupPf('data-point-bar'),
+                    'd': function (d) {
+                        return getPathForDataPoint(d, y);
                     }
                 });
 
-            var lines = parseLine(parseDataSummary(data), x, y);
+            var lines = parseLine(summary, x, y);
 
             canvas
                 .append('g')
                 .attr({
-                    'class': pf+'data-lines '+pf+options.classPrefix+'data-lines',
-                    'transform': 'translate('+(x.rangeBand() / 2)+',0)'
+                    'class':     groupPf('data-lines'),
+                    'transform': translateStr(x.rangeBand() / 2, 0)
                 })
-                .selectAll('.'+pf+'data-line')
+                .selectAll('.' + pf + 'data-line')
                 .data(lines)
                 .enter()
                 .append('line')
                 .attr({
-                    'class': pf+'data-line '+pf+options.classPrefix+'data-line',
-                    'x1': function(d) {return d.start.x;},
-                    'y1': function(d) {return d.start.y;},
-                    'x2': function(d) {return d.end.x;},
-                    'y2': function(d) {return d.end.y;}
+                    'class': groupPf('data-line'),
+                    'x1': function(d) { return d.start.x; },
+                    'y1': function(d) { return d.start.y; },
+                    'x2': function(d) { return d.end.x;   },
+                    'y2': function(d) { return d.end.y;   }
                 })
                 .classed({
                     'dotted': function (d) {
@@ -527,30 +494,30 @@ return;
 
 //////
 
-dataPoint.on('mouseover', function(d, i) {
-    var _this = d3.select(this);
-    if (d.type !== 'gap') {
-        this.__tooltip__ = [];
-        if (d.max != null) {
-            this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
-                y(d.max), roundTemperature(d.max)));
-        }
-        if (d.mean != null) {
-            this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
-                y(d.mean), roundTemperature(d.mean)));
-        }
-        if (d.min != null) {
-            this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
-                y(d.min), roundTemperature(d.min)));
-        }
-    }
-})
-.on('mouseout', function() {
-    if (this.__tooltip__) {
-        for (var i = 0; i < this.__tooltip__.length; i++) {
-            this.__tooltip__[i].remove();
-        }
-    }
-});
+// dataPoint.on('mouseover', function(d, i) {
+//     var _this = d3.select(this);
+//     if (d.type !== 'gap') {
+//         this.__tooltip__ = [];
+//         if (d.max != null) {
+//             this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
+//                 y(d.max), roundTemperature(d.max)));
+//         }
+//         if (d.mean != null) {
+//             this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
+//                 y(d.mean), roundTemperature(d.mean)));
+//         }
+//         if (d.min != null) {
+//             this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
+//                 y(d.min), roundTemperature(d.min)));
+//         }
+//     }
+// })
+// .on('mouseout', function() {
+//     if (this.__tooltip__) {
+//         for (var i = 0; i < this.__tooltip__.length; i++) {
+//             this.__tooltip__[i].remove();
+//         }
+//     }
+// });
 
 }(window, jQuery, d3));
