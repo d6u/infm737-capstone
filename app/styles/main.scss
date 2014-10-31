@@ -33,6 +33,11 @@ body {
       font-family: Consolas, Monaco;
     }
   }
+
+  &.raptor-x text {
+    text-anchor: end;
+    transform: translate(-13px, 10px) rotate(-90deg);
+  }
 }
 
 .raptor-data-point-bar {

@@ -44,5 +44,29 @@
 <script src="scripts/data.js"></script>
 <script src="scripts/main.js"></script>
 <!-- endbuild -->
+
+<script>
+  var chart = new RaptorChart('#temperature');
+
+  chart.drawData(pulseData, {
+    id: 'pulse',
+    position: 'right',
+    title: 'Pulse',
+    classPrefix: 'pulse-',
+    labelFormatter: function (v) {
+      return v;
+    }
+  });
+
+  chart.drawData(temperatureData, {
+    id: 'temperature',
+    position: 'left',
+    title: 'Temperature',
+    classPrefix: 'temperature-',
+    labelFormatter: function (v) {
+      return v + '°F';
+    }
+  });
+</script>
 </body>
 </html>
