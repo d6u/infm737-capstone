@@ -157,13 +157,11 @@ window.RaptorChart = (function () {
 
         var yAxis1 = this.yAxis1 = d3.svg.axis()
             .scale(y1)
-            .orient('left')
-            .ticks(10);
+            .orient('left');
 
         var yAxis2 = this.yAxis2 = d3.svg.axis()
             .scale(y2)
-            .orient('right')
-            .ticks(10);
+            .orient('right');
 
         function parseLine(summary, x, y) {
             var result = [],
@@ -295,9 +293,11 @@ window.RaptorChart = (function () {
                 yInverse.range(yDomain);
 
                 if (options.labelFormatter) {
-                    yAxis.tickFormat(function(d) {
-                        return options.labelFormatter(d);
-                    });
+                    yAxis.tickFormat(options.labelFormatter);
+                }
+
+                if (options.yAxisTickCount != null) {
+                    yAxis.ticks(options.yAxisTickCount);
                 }
 
                 canvas.append('g')

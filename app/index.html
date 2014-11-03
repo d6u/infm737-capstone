@@ -63,7 +63,8 @@
     labelFormatter: function (v) {
       var m = /(\d+(\.\d)?)\d*/.exec(v);
       return (m[2] ? m[1] : m[1] + '.0') + '°F';
-    }
+    },
+    yAxisTickCount: 10
   });
 </script>
 </body>
