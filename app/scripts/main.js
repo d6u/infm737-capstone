@@ -17,8 +17,9 @@ window.RaptorChart = (function () {
             outterRadius: 6,
             innerRadius: 4
         },
+        classPrefix: 'raptor-',
         maxColumns: 61,
-        classPrefix: 'raptor-'
+        enableDateGap: true
     };
 
     function parseDataSummary(data) {
@@ -220,6 +221,9 @@ window.RaptorChart = (function () {
              * @return {Array} [Date, 1, 2, 3, Date, Date, 6, 7, 8, Date]
              */
             function getXDomain(dates) {
+                if (!opts.enableDateGap) {
+                    return dates;
+                }
                 var prev   = dates[0],
                     result = [prev],
                     j = 1;

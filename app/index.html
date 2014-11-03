@@ -46,7 +46,9 @@
 <!-- endbuild -->
 
 <script>
-  var chart = new RaptorChart('#temperature');
+  var chart = new RaptorChart('#temperature', {
+    enableDateGap: false
+  });
 
   chart.drawData(pulseData, {
     id: 'pulse',
