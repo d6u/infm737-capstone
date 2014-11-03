@@ -294,9 +294,11 @@ window.RaptorChart = (function () {
                 y.domain(yDomain);
                 yInverse.range(yDomain);
 
-                yAxis.tickFormat(function(d) {
-                    return options.labelFormatter(d);
-                });
+                if (options.labelFormatter) {
+                    yAxis.tickFormat(function(d) {
+                        return options.labelFormatter(d);
+                    });
+                }
 
                 canvas.append('g')
                     .attr({

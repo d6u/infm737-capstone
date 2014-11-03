@@ -52,7 +52,10 @@
     id: 'pulse',
     position: 'right',
     title: 'Pulse',
-    classPrefix: 'pulse-'
+    classPrefix: 'pulse-',
+    labelFormatter: function (v) {
+      return v;
+    }
   });
 
   chart.drawData(temperatureData, {
@@ -61,8 +64,7 @@
     title: 'Temperature',
     classPrefix: 'temperature-',
     labelFormatter: function (v) {
-      var m = /(\d+(\.\d)?)\d*/.exec(v);
-      return (m[2] ? m[1] : m[1] + '.0') + '°F';
+      return v + '°F';
     }
   });
 </script>
