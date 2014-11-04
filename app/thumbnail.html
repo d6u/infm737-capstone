@@ -46,17 +46,19 @@
 <!-- endbuild -->
 
 <script>
-  var chart = new RaptorChart('#temperature');
-
-  chart.drawData(pulseData, {
-    id: 'pulse',
-    position: 'right',
-    title: 'Pulse',
-    classPrefix: 'pulse-',
-    labelFormatter: function (v) {
-      return v;
-    }
+  var chart = new RaptorChart('#temperature', {
+    maxColumns: 5,
+    enableDateGap: false,
+    width: 200,
+    height: 150
   });
+
+  // chart.drawData(pulseData, {
+  //   id: 'pulse',
+  //   position: 'right',
+  //   title: 'Pulse',
+  //   classPrefix: 'pulse-'
+  // });
 
   chart.drawData(temperatureData, {
     id: 'temperature',
@@ -64,8 +66,10 @@
     title: 'Temperature',
     classPrefix: 'temperature-',
     labelFormatter: function (v) {
-      return v + '°F';
-    }
+      var m = /(\d+(\.\d)?)\d*/.exec(v);
+      return (m[2] ? m[1] : m[1] + '.0') + '°F';
+    },
+    yAxisTickCount: 5
   });
 </script>
 </body>

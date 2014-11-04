@@ -87,7 +87,7 @@ window.RaptorChart = (function () {
             n = n + '';
             return n.length >= w ? n : new Array(w - n.length + 1).join(z) + n;
         }
-        return '' + this.getUTCFullYear() + padStr(this.getUTCMonth() + 1, 2) + padStr(this.getUTCDate(), 2);
+        return '' + this.getFullYear() + padStr(this.getMonth() + 1, 2) + padStr(this.getDate(), 2);
     };
 
     Date.prototype.getDateStrAsNum = function () {
@@ -95,12 +95,12 @@ window.RaptorChart = (function () {
     };
 
     Date.prototype.getUnixDay = function () {
-        return Math.ceil(this.getTime() / 1000 / 60 / 60 / 24);
+        return Math.floor((this.getTime() / 1000 / 60 - this.getTimezoneOffset()) / 60 / 24);
     };
 
     Date.parseDateStr = function (datetamp) {
-        var parseDate = d3.time.format('%Y%m%d %Z').parse;
-        return parseDate(datetamp + ' +0000');
+        var parseDate = d3.time.format('%Y%m%d').parse;
+        return parseDate(datetamp);
     };
 
     return function (sel, opts) {
@@ -109,6 +109,11 @@ window.RaptorChart = (function () {
         this.sel         = sel;
         this.summaryData = {};
         this.dates       = [];
+
+        var maxColumns = Math.floor(opts.width / (2 + opts.graph.outterRadius * 2));
+        if (opts.maxColumns > maxColumns) {
+            opts.maxColumns = maxColumns;
+        }
 
         var _this  = this;
         var pf     = opts.classPrefix;
@@ -221,23 +226,33 @@ window.RaptorChart = (function () {
              * @return {Array} [Date, 1, 2, 3, Date, Date, 6, 7, 8, Date]
              */
             function getXDomain(dates) {
+                var result;
                 if (!opts.enableDateGap) {
-                    return dates;
-                }
-                var prev   = dates[0],
-                    result = [prev],
-                    j = 1;
-                for (var i = 1; i < dates.length; i++) {
-                    if (dates[i].getUnixDay() - prev.getUnixDay() > 1) {
-                        result.push(j++);
-                        result.push(j++);
-                        result.push(j++);
+                    result = dates;
+                } else {
+                    var prev = dates[0],
+                        j    = 1;
+                    result = [prev];
+                    for (var i = 1; i < dates.length; i++) {
+                        if (dates[i].getUnixDay() - prev.getUnixDay() > 1) {
+                            result.push(j++);
+                            result.push(j++);
+                            result.push(j++);
+                        }
+                        result.push(dates[i]);
+                        prev = dates[i];
+                        j += 1;
                     }
-                    result.push(dates[i]);
-                    prev = dates[i];
-                    j += 1;
                 }
-                return result;
+                if (result.length > opts.maxColumns) {
+                    result = result.slice(-opts.maxColumns);
+                    while (typeof result[0] === 'number') {
+                        result.shift();
+                    }
+                    return result;
+                } else {
+                    return result;
+                }
             }
 
             var t1, t2;
@@ -276,7 +291,20 @@ window.RaptorChart = (function () {
                 return d.date;
             }));
 
-            function parseYScale(position, data, y, yInverse, yAxis, canvas) {
+            // Cut data points that's not in the range of x axis domain
+            var xDomainStart = x.domain()[0].getUnixDay();
+            if (summary[0].date.getUnixDay() !== xDomainStart) {
+                var i = 0;
+                for (var j = 0; j < summary.length; j++) {
+                    if (summary[j].date.getUnixDay() >= xDomainStart) {
+                        i = j;
+                        break;
+                    }
+                }
+                summary = summary.slice(i);
+            }
+
+            function parseYScale(position, summary, y, yInverse, yAxis, canvas) {
 
                 function addDomainMargin(domain) {
                     var range = domain[1] - domain[0];
@@ -285,11 +313,10 @@ window.RaptorChart = (function () {
                     return domain;
                 }
 
-                var yDomain = d3.extent(data, function(d) {
-                    return Number(d.val);
-                }).sort(function (a, b) {
-                    return a - b;
-                });
+                var yDomain = d3.extent(
+                        summary.map(function (d) { return d.max; })
+                        .concat(summary.map(function (d) { return d.min; }))
+                    ).sort(function (a, b) { return a - b; });
 
                 addDomainMargin(yDomain);
 
@@ -315,10 +342,10 @@ window.RaptorChart = (function () {
             var y, groupPf = prefixClass(pf, options.classPrefix);
 
             if (options.position === 'left') {
-                parseYScale(options.position, data, y1, y1Inverse, yAxis1, canvas);
+                parseYScale(options.position, summary, y1, y1Inverse, yAxis1, canvas);
                 y = y1;
             } else {
-                parseYScale(options.position, data, y2, y2Inverse, yAxis2, canvas);
+                parseYScale(options.position, summary, y2, y2Inverse, yAxis2, canvas);
                 y = y2;
             }
 
