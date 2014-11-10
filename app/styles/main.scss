@@ -11,8 +11,6 @@ body {
 }
 
 // ----------------------------------------
-
-
 @mixin chart-styles($prefix) {
   .#{$prefix}-svg {
     background-color: #FFF;
@@ -42,26 +40,6 @@ body {
     }
   }
 
-  .#{$prefix}-data-point-bar {
-    stroke: none;
-    fill-rule: evenodd;
-    &.#{$prefix}-temperature-data-point-bar {
-      fill: rgba(0, 122, 255, .3);
-    }
-    &.#{$prefix}-pulse-data-point-bar {
-      fill: rgba(255, 59, 48, .3);
-    }
-  }
-
-  .#{$prefix}-data-point-dot {
-    &.#{$prefix}-temperature-data-point-dot {
-      fill: #007AFF;
-    }
-    &.#{$prefix}-pulse-data-point-dot {
-      fill: #FF3B30;
-    }
-  }
-
   .#{$prefix}-data-point-background {
     fill: transparent;
     &.highlight {
@@ -74,12 +52,6 @@ body {
     &.dotted {
       stroke-dasharray: 5, 5;
     }
-    &.#{$prefix}-temperature-data-line {
-      stroke: #007AFF;
-    }
-    &.#{$prefix}-pulse-data-line {
-      stroke: #FF3B30;
-    }
   }
 
   .cursor-line {
@@ -91,7 +63,7 @@ body {
 
   .tooltip {
     path {
-      fill: rgba(0, 0, 0, .9);
+      fill: rgba(0, 0, 0, .8);
     }
     text {
       font-size: 10px;
@@ -104,10 +76,20 @@ body {
   }
 }
 
-@include chart-styles('raptor');
-// @include chart-styles('raptor-thumbnail');
+@mixin data-group-style($mainPrefix, $groupPrefix, $color) {
+  .#{$mainPrefix}-#{$groupPrefix}-data-point-bar {
+    fill: rgba($color, 0.3);
+  }
 
-// .raptor-thumbnail-axis.raptor-thumbnail-x text {
-//   text-anchor: middle;
-//   transform: translate(-13px, 10px);
-// }
+  .#{$mainPrefix}-#{$groupPrefix}-data-point-dot {
+    fill: $color;
+  }
+
+  .#{$mainPrefix}-#{$groupPrefix}-data-line {
+    stroke: $color;
+  }
+}
+
+@include chart-styles('raptor');
+@include data-group-style('raptor', 'temperature', #007AFF);
+@include data-group-style('raptor', 'pulse', #FF3B30);
