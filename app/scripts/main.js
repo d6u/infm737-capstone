@@ -529,13 +529,15 @@ window.RaptorChart = (function () {
                     cursorTooltip1.setTransform(x - 20, y);
                     cursorTooltip1.setVal(options.labelFormatter(roundTemperature(y1Inverse(y))));
 
-                    if (!cursorTooltip2) {
-                        cursorTooltip2 = makeTooltip(canvas, x, y, null, true);
-                    }
+                    if (Object.keys(_this.summaryData).length > 1) {
+                        if (!cursorTooltip2) {
+                            cursorTooltip2 = makeTooltip(canvas, x, y, null, true);
+                        }
 
-                    cursorTooltip2.classed({hide: false});
-                    cursorTooltip2.setTransform(x + 20, y);
-                    cursorTooltip2.setVal(roundTemperature(y2Inverse(y)));
+                        cursorTooltip2.classed({hide: false});
+                        cursorTooltip2.setTransform(x + 20, y);
+                        cursorTooltip2.setVal(roundTemperature(y2Inverse(y)));
+                    }
 
                 } else {
                     if (cursorLine) {
@@ -545,8 +547,10 @@ window.RaptorChart = (function () {
                         cursorTooltip1.classed({hide: true});
                     }
 
-                    if (cursorTooltip2) {
-                        cursorTooltip2.classed({hide: true});
+                    if (Object.keys(_this.summaryData).length > 1) {
+                        if (cursorTooltip2) {
+                            cursorTooltip2.classed({hide: true});
+                        }
                     }
                 }
             });
