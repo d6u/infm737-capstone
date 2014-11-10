@@ -62,6 +62,13 @@ body {
     }
   }
 
+  .#{$prefix}-data-point-background {
+    fill: transparent;
+    &.highlight {
+      fill: rgba(0, 0, 0, .1);
+    }
+  }
+
   .#{$prefix}-data-line {
     stroke-width: 2px;
     &.dotted {

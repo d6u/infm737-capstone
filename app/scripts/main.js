@@ -69,7 +69,7 @@ window.RaptorChart = (function () {
     }
 
     function isArray(obj) {
-        return Object.prototype.toString.call(obj) === "[object Array]";
+        return Object.prototype.toString.call(obj) === '[object Array]';
     }
 
     function flatArrary(arr) {
@@ -86,13 +86,14 @@ window.RaptorChart = (function () {
 
     // (String: prefixes ...) -> (String: classNames ...) -> String
     function prefixClass() {
-        for (var i = 0; i < arguments.length; i++) {
+        var i;
+        for (i = 0; i < arguments.length; i++) {
             if (isArray(arguments[i])) {
-                return prefixClass.apply(this, (flatArrary(arguments)));
+                return prefixClass.apply(undefined, (flatArrary(arguments)));
             }
         }
         var prefixes = [], aggregator = '';
-        for (var i = 0; i < arguments.length; i++) {
+        for (i = 0; i < arguments.length; i++) {
             aggregator += arguments[i];
             prefixes.push(aggregator);
         }
@@ -134,6 +135,7 @@ window.RaptorChart = (function () {
         this.opts        = opts = _extend(true, {}, defaultOpt, opts);
         this.sel         = sel;
         this.summaryData = {};
+        this.dataOptions = {};
         this.dates       = [];
 
         var maxColumns = Math.floor(opts.width / (2 + opts.graph.outterRadius * 2));
@@ -154,6 +156,11 @@ window.RaptorChart = (function () {
             .attr({
                 'class':     mainPf('canvas'),
                 'transform': translateStr(opts.margin.left, opts.margin.top)
+            });
+
+        var mouseoverG = canvas.append('g')
+            .attr({
+                'class': mainPf('mousemove')
             });
 
         var x  = d3.scale.ordinal().rangeBands([0, opts.width], 0, 0.5);
@@ -232,8 +239,7 @@ window.RaptorChart = (function () {
          * @return {String}   string of path
          */
         function getPathForDataPoint(d, y) {
-            var w1 = opts.graph.outterRadius,
-                w2 = opts.graph.innerRadius;
+            var w1 = opts.graph.outterRadius;
             return 'M'+(-w1)+' '+y(d.max)+
                 'a'+w1+' '+w1+' 0 0 1 '+w1*2+' 0'+
                 'L'+w1+' '+y(d.min)+
@@ -293,9 +299,58 @@ window.RaptorChart = (function () {
                 })
             );
 
-            x.domain(getXDomain(_this.dates));
+            var xDomain = getXDomain(_this.dates);
+
+            x.domain(xDomain);
             xAxisG.transition().duration(300).call(xAxis);
             xAxisG.selectAll('text').style({'text-anchor': ''});
+
+            mouseoverG.selectAll('rect').remove();
+            mouseoverG.selectAll('rect')
+                .data(xDomain)
+                .enter()
+                .append('rect')
+                .attr({
+                    'class': mainPf('data-point-background'),
+                    'x': x,
+                    'y': 0,
+                    'height': opts.height,
+                    'width': x.rangeBand()
+                })
+                .on('mouseenter', function () {
+                    var $this = d3.select(this),
+                        currentVal = $this.datum();
+                    if (currentVal.toDateString) {
+                        var key, summaries, i, d, j, val, valStr, opt;
+                        for (key in _this.summaryData) {
+                            summaries = _this.summaryData[key];
+                            for (i = 0; i < summaries.length; i++) {
+                                d = summaries[i];
+                                if (d.date.getDateStr() === currentVal.getDateStr()) {
+                                    // Render tooltips
+                                    for (j = 0; j < d.readings.length; j++) {
+                                        val    = d.readings[j].val;
+                                        opt    = _this.dataOptions[key];
+                                        valStr = opt.labelFormatter ? opt.labelFormatter(val) : String(val);
+                                        makeTooltip(mouseoverG, x.fromDate(d.date) + x.rangeBand() / 2, opt.y(val), valStr, opt.position === 'right');
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Highlight current column
+                        $this.classed({
+                            'highlight': true
+                        });
+                    }
+                })
+                .on('mouseleave', function () {
+                    mouseoverG.selectAll('.tooltip').remove();
+                    d3.select(this).classed({
+                        'highlight': false
+                    });
+                });
         }
 
         this.drawData = function (data, options) {
@@ -305,6 +360,7 @@ window.RaptorChart = (function () {
 
             var summary = parseDataSummary(data);
             this.summaryData[options.id] = summary;
+            this.dataOptions[options.id] = options;
 
             mergeDates(summary.map(function (d) {
                 return d.date;
@@ -368,7 +424,10 @@ window.RaptorChart = (function () {
                 y = y2;
             }
 
-            var dataPoints = canvas.append('g')
+            // Save reference to y scale, to user later in tooltips
+            options.y = y;
+
+            var dataPoints = canvas.insert('g', '.' + mainPf('mousemove'))
                 .attr({
                     'class':     groupPf('data-group'),
                     'transform': translateStr(x.rangeBand() / 2, 0)
@@ -412,10 +471,12 @@ window.RaptorChart = (function () {
                     }
                 });
 
+            // Render lines
+            //
             var lines = parseLine(summary, x, y);
 
             canvas
-                .append('g')
+                .insert('g', '.' + mainPf('data-group'))
                 .attr({
                     'class':     groupPf('data-lines'),
                     'transform': translateStr(x.rangeBand() / 2, 0)
@@ -560,35 +621,5 @@ window.RaptorChart = (function () {
         }
     };
 }());
-
-return;
-
-//////
-
-// dataPoint.on('mouseover', function(d, i) {
-//     var _this = d3.select(this);
-//     if (d.type !== 'gap') {
-//         this.__tooltip__ = [];
-//         if (d.max != null) {
-//             this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
-//                 y(d.max), roundTemperature(d.max)));
-//         }
-//         if (d.mean != null) {
-//             this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
-//                 y(d.mean), roundTemperature(d.mean)));
-//         }
-//         if (d.min != null) {
-//             this.__tooltip__.push(makeTooltip(_this, x(i) + x.rangeBand() / 2,
-//                 y(d.min), roundTemperature(d.min)));
-//         }
-//     }
-// })
-// .on('mouseout', function() {
-//     if (this.__tooltip__) {
-//         for (var i = 0; i < this.__tooltip__.length; i++) {
-//             this.__tooltip__[i].remove();
-//         }
-//     }
-// });
 
 }(window, jQuery, d3));
