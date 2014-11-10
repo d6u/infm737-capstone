@@ -8,8 +8,8 @@ window.RaptorChart = (function () {
         margin: {
             top: 20,
             right: 50,
-            bottom: 120,
-            left: 60
+            bottom: 70,
+            left: 80
         },
         width: 800,
         height: 300,
@@ -498,6 +498,23 @@ window.RaptorChart = (function () {
                     }
                 });
 
+            // Add Axis Title
+            //
+            canvas.append('g')
+                .attr({
+                    'class': mainPf('title-group-' + options.position) + ' ' + groupPf('title-group'),
+                    'transform': options.position === 'left' ? translateStr(-opts.margin.left + 16, 0) + ' rotate(-90)' : translateStr(opts.margin.right - 16, 0) + ' rotate(90)'
+                })
+                .append('text')
+                .style({'text-anchor': ''})
+                .attr({
+                    'x': options.position === 'left' ? - opts.height / 2 : opts.height / 2,
+                    'y': options.position === 'left' ? 0 : - opts.width
+                })
+                .html(options.title);
+
+            // Tooltips
+            //
             var cursorLine, cursorTooltip1, cursorTooltip2;
 
             svg.on('mousemove', function() {

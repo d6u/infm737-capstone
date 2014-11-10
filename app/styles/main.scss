@@ -14,6 +14,9 @@ body {
 @mixin chart-styles($prefix) {
   .#{$prefix}-svg {
     background-color: #FFF;
+    text {
+      font-family: Consolas, Monaco;
+    }
   }
 
   .#{$prefix}-axis {
@@ -30,8 +33,11 @@ body {
     &.#{$prefix}-x, &.#{$prefix}-y {
       text {
         font-size: 12px;
-        font-family: Consolas, Monaco;
       }
+    }
+
+    &.#{$prefix}-x text {
+      font-weight: bold;
     }
 
     &.#{$prefix}-x text {
@@ -51,6 +57,13 @@ body {
     stroke-width: 2px;
     &.dotted {
       stroke-dasharray: 5, 5;
+    }
+  }
+
+  .#{$prefix}-title-group-left,
+  .#{$prefix}-title-group-right {
+    text {
+      text-anchor: middle;
     }
   }
 
@@ -87,6 +100,12 @@ body {
 
   .#{$mainPrefix}-#{$groupPrefix}-data-line {
     stroke: $color;
+  }
+
+  .#{$mainPrefix}-#{$groupPrefix}-title-group text {
+    fill: $color;
+    font-size: 14px;
+    font-weight: bold;
   }
 }
 
