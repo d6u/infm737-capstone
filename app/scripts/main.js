@@ -210,11 +210,11 @@ window.RaptorChart = (function () {
                 result.push({
                     start: {
                         x: xCoord1,
-                        y: y(prev.mean)
+                        y: y(prev.readings[prev.readings.length - 1].val)
                     },
                     end: {
                         x: xCoord2,
-                        y: y(d.mean)
+                        y: y(d.readings[0].val)
                     },
                     type: type
                 });
@@ -237,10 +237,7 @@ window.RaptorChart = (function () {
             return 'M'+(-w1)+' '+y(d.max)+
                 'a'+w1+' '+w1+' 0 0 1 '+w1*2+' 0'+
                 'L'+w1+' '+y(d.min)+
-                'a'+w1+' '+w1+' 0 0 1 '+(-w1*2)+' 0Z '+
-                'M'+(-w2)+' '+y(d.mean)+
-                'a'+w2/2+' '+w2/2+' 0 0 1 '+w2*2+' 0'+
-                'a'+w2/2+' '+w2/2+' 0 0 1 '+(-w2*2)+' 0Z';
+                'a'+w1+' '+w1+' 0 0 1 '+(-w1*2)+' 0Z';
         }
 
         function mergeDates (dates) {
@@ -303,7 +300,7 @@ window.RaptorChart = (function () {
 
         this.drawData = function (data, options) {
             data.sort(function (a, b) {
-                return a.date.getDateStrAsNum() - b.date.getDateStrAsNum();
+                return a.date.getTime() - b.date.getTime();
             });
 
             var summary = parseDataSummary(data);
@@ -388,11 +385,30 @@ window.RaptorChart = (function () {
                 });
 
             dataPoints
+                .filter(function (d) {
+                    return d.readings.length > 1;
+                })
                 .append('path')
                 .attr({
                     'class': groupPf('data-point-bar'),
                     'd': function (d) {
                         return getPathForDataPoint(d, y);
+                    }
+                });
+
+            dataPoints
+                .selectAll('circle')
+                .data(function (d) {
+                    return d.readings;
+                })
+                .enter()
+                .append('circle')
+                .attr({
+                    'class': groupPf('data-point-dot'),
+                    'r': opts.graph.innerRadius,
+                    'cx': 0,
+                    'cy': function (d) {
+                        return y(d.val);
                     }
                 });
 
