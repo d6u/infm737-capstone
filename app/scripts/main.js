@@ -383,6 +383,9 @@ window.RaptorChart = (function () {
 
                 function addDomainMargin(domain) {
                     var range = domain[1] - domain[0];
+                    if (range === 0) {
+                        range = domain[0] * 0.1;
+                    }
                     domain[0] -= range * 0.1;
                     domain[1] += range * 0.1;
                     return domain;

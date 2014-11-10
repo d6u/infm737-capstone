@@ -60,7 +60,6 @@
       }
 
       if (d.getDate) {
-        console.log(d.getFullYear());
         return (d.getMonth() + 1) + '/' + pad(d.getDate(), 2) + '/' + d.getFullYear();
       }
     }
@@ -73,7 +72,7 @@
   //   classPrefix: 'pulse-'
   // });
 
-  chart.drawData(temperatureData, {
+  chart.drawData(temperatureDataSameVal, {
     id: 'temperature',
     position: 'left',
     title: 'Temperature',

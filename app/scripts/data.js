@@ -49,6 +49,20 @@ var vitals2 = [
     {'date':'04-05-2003','datetime':'04-05-2003 140500','temperature':'101.4','pulse':'82'}
 ];
 
+var thumbnailDataSameVal = [
+    {"date":"08-17-2010","datetime":"08-17-2010 160300","temperature":"99.5"},
+    {"date":"08-16-2010","datetime":"08-16-2010 212900","temperature":"99.5"},
+    {"date":"08-15-2010","datetime":"08-15-2010 195100","temperature":"99.5"},
+    {"date":"08-14-2010","datetime":"08-14-2010 113700","temperature":"99.5"},
+    {"date":"08-13-2010","datetime":"08-13-2010 101100","temperature":"99.5"}
+];
+
+var labsDataSameDay = [
+    {"date":"03-16-2010","egfr":57,"datetime":"03-16-2010 102355"},
+    {"date":"03-16-2010","egfr":69,"datetime":"03-16-2010 102149"},
+    {"date":"03-16-2010","egfr":57,"datetime":"03-16-2010 102052"}
+];
+
 /**
  * Create a clone of object, works only with array and plain object type,
  * not working with type such as Date
@@ -114,3 +128,4 @@ function parsePulse(data) {
 
 var temperatureData = parseTemperature(vitals2);
 var pulseData = parsePulse(vitals2);
+var temperatureDataSameVal = parseTemperature(thumbnailDataSameVal);
