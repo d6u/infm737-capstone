@@ -50,7 +50,20 @@
     maxColumns: 5,
     enableDateGap: false,
     width: 200,
-    height: 150
+    height: 150,
+    classPrefix: 'raptor-',
+    xAxisFormatter: function (d) {
+      function pad(n, width, z) {
+        z = z || '0';
+        n = n + '';
+        return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+      }
+
+      if (d.getDate) {
+        console.log(d.getFullYear());
+        return (d.getMonth() + 1) + '/' + pad(d.getDate(), 2) + '/' + d.getFullYear();
+      }
+    }
   });
 
   // chart.drawData(pulseData, {

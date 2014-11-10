@@ -1,36 +1,36 @@
 <!doctype html>
 <html class="no-js">
 <head>
-  <meta charset="utf-8">
-  <title>raptor</title>
-  <meta name="description" content="">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+    <meta charset="utf-8">
+    <title>raptor</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
 
-  <!-- build:css styles/vendor.css -->
-  <!-- bower:css -->
-  <!-- endbower -->
-  <!-- endbuild -->
+    <!-- build:css styles/vendor.css -->
+    <!-- bower:css -->
+    <!-- endbower -->
+    <!-- endbuild -->
 
-  <!-- build:css styles/main.css -->
-  <link rel="stylesheet" href="styles/main.css">
-  <!-- endbuild -->
+    <!-- build:css styles/main.css -->
+    <link rel="stylesheet" href="styles/main.css">
+    <!-- endbuild -->
 
-  <!-- build:js scripts/vendor/modernizr.js -->
-  <script src="bower_components/modernizr/modernizr.js"></script>
-  <!-- endbuild -->
+    <!-- build:js scripts/vendor/modernizr.js -->
+    <script src="bower_components/modernizr/modernizr.js"></script>
+    <!-- endbuild -->
 </head>
 <body>
 
 <div class="container-new">
-  <div id="temperature"></div>
-  <div id="temperature-pulse"></div>
+    <div id="temperature"></div>
+    <div id="temperature-pulse"></div>
 </div>
 
 <div class="container">
-  <div id="thumbnail-chart"></div>
-  <div id="labs-chart"></div>
-  <div id="vitals-chart"></div>
+    <div id="thumbnail-chart"></div>
+    <div id="labs-chart"></div>
+    <div id="vitals-chart"></div>
 </div>
 
 <!-- build:js scripts/vendor.js -->
@@ -46,28 +46,38 @@
 <!-- endbuild -->
 
 <script>
-  var chart = new RaptorChart('#temperature', {
-    // enableDateGap: false
-  });
+    var chart = new RaptorChart('#temperature', {
+        xAxisFormatter: function (d) {
+            function pad(n, width, z) {
+                z = z || '0';
+                n = n + '';
+                return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+            }
 
-  chart.drawData(pulseData, {
-    id: 'pulse',
-    position: 'right',
-    title: 'Pulse',
-    classPrefix: 'pulse-'
-  });
+            if (d.getDate) {
+                return (d.getMonth() + 1) + '/' + pad(d.getDate(), 2) + '/' + d.getFullYear();
+            }
+        }
+    });
 
-  chart.drawData(temperatureData, {
-    id: 'temperature',
-    position: 'left',
-    title: 'Temperature',
-    classPrefix: 'temperature-',
-    labelFormatter: function (v) {
-      var m = /(\d+(\.\d)?)\d*/.exec(v);
-      return (m[2] ? m[1] : m[1] + '.0') + '°F';
-    },
-    yAxisTickCount: 10
-  });
+    chart.drawData(pulseData, {
+        id: 'pulse',
+        position: 'right',
+        title: 'Pulse',
+        classPrefix: 'pulse-'
+    });
+
+    chart.drawData(temperatureData, {
+        id: 'temperature',
+        position: 'left',
+        title: 'Temperature',
+        classPrefix: 'temperature-',
+        labelFormatter: function (v) {
+            var m = /(\d+(\.\d)?)\d*/.exec(v);
+            return (m[2] ? m[1] : m[1] + '.0') + '°F';
+        },
+        yAxisTickCount: 10
+    });
 </script>
 </body>
 </html>

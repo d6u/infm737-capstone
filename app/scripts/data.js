@@ -8,6 +8,12 @@ var thumbnails = [
     {'date':'11-10-2008', 'datetime':'11-10-2008 080000', 'temperature':'98.2'}
 ];
 
+var labs = [
+    {"date":"03-16-2010","egfr":57},
+    {"date":"03-16-2010","egfr":69},
+    {"date":"03-16-2010","egfr":57}
+];
+
 var vitals1 = [
     {'date':'04-09-2003','datetime':'04-09-2003 094200','temperature':'100','pulse':'88'},
     {'date':'04-09-2003','datetime':'04-09-2003 084200','temperature':'98.6','pulse':'72'},

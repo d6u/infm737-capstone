@@ -19,7 +19,12 @@ window.RaptorChart = (function () {
         },
         classPrefix: 'raptor-',
         maxColumns: 61,
-        enableDateGap: true
+        enableDateGap: true,
+        xAxisFormatter: function (d) {
+            if (d.toDateString) {
+                return d.toDateString();
+            }
+        }
     };
 
     function parseDataSummary(data) {
@@ -63,8 +68,29 @@ window.RaptorChart = (function () {
         return 'translate(' + x + ',' + y + ')';
     }
 
+    function isArray(obj) {
+        return Object.prototype.toString.call(obj) === "[object Array]";
+    }
+
+    function flatArrary(arr) {
+        var result = [];
+        for (var i = 0; i < arr.length; i++) {
+            if (isArray(arr[i])) {
+                result = result.concat(flatArrary(arr[i]));
+            } else {
+                result.push(arr[i]);
+            }
+        }
+        return result;
+    }
+
     // (String: prefixes ...) -> (String: classNames ...) -> String
     function prefixClass() {
+        for (var i = 0; i < arguments.length; i++) {
+            if (isArray(arguments[i])) {
+                return prefixClass.apply(this, (flatArrary(arguments)));
+            }
+        }
         var prefixes = [], aggregator = '';
         for (var i = 0; i < arguments.length; i++) {
             aggregator += arguments[i];
@@ -116,7 +142,7 @@ window.RaptorChart = (function () {
         }
 
         var _this  = this;
-        var pf     = opts.classPrefix;
+        var pf     = opts.classPrefix.split(' ');
         var mainPf = prefixClass(pf);
         var svg    = d3.select(sel).append('svg')
             .attr({
@@ -149,11 +175,7 @@ window.RaptorChart = (function () {
         var xAxis = d3.svg.axis()
             .scale(x)
             .orient('bottom')
-            .tickFormat(function(d) {
-                if (d.toDateString) {
-                    return d.toDateString();
-                }
-            });
+            .tickFormat(opts.xAxisFormatter);
 
         var xAxisG = canvas.append('g')
             .attr({

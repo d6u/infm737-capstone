@@ -12,75 +12,88 @@ body {
 
 // ----------------------------------------
 
-.raptor-svg {
-  background-color: #FFF;
-}
 
-.raptor-axis {
-  path,
-  line {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
-  }
-  text {
-    fill: #000;
+@mixin chart-styles($prefix) {
+  .#{$prefix}-svg {
+    background-color: #FFF;
   }
 
-  &.raptor-x, &.raptor-y {
+  .#{$prefix}-axis {
+    path,
+    line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
     text {
-      font-size: 12px;
-      font-family: Consolas, Monaco;
+      fill: #000;
+    }
+
+    &.#{$prefix}-x, &.#{$prefix}-y {
+      text {
+        font-size: 12px;
+        font-family: Consolas, Monaco;
+      }
+    }
+
+    &.#{$prefix}-x text {
+      text-anchor: end;
+      transform: translate(-5px, 0px) rotate(-45deg);
     }
   }
 
-  &.raptor-x text {
-    text-anchor: end;
-    transform: translate(-13px, 10px) rotate(-90deg);
+  .#{$prefix}-data-point-bar {
+    stroke: none;
+    fill-rule: evenodd;
+    &.#{$prefix}-temperature-data-point-bar {
+      // fill: #007AFF;
+      fill: rgba(0, 122, 255, .3);
+    }
+    &.#{$prefix}-pulse-data-point-bar {
+      // fill: #FF3B30;
+      fill: rgba(255, 59, 48, .3);
+    }
+  }
+
+  .#{$prefix}-data-line {
+    stroke-width: 2px;
+    &.dotted {
+      stroke-dasharray: 5, 5;
+    }
+    &.#{$prefix}-temperature-data-line {
+      stroke: #007AFF;
+    }
+    &.#{$prefix}-pulse-data-line {
+      stroke: #FF3B30;
+    }
+  }
+
+  .cursor-line {
+    &.show {
+      stroke: #000;
+      stroke-width: 1px;
+    }
+  }
+
+  .tooltip {
+    path {
+      fill: rgba(0, 0, 0, .9);
+    }
+    text {
+      font-size: 10px;
+      fill: #FFF;
+    }
+
+    &.hide {
+      display: none;
+    }
   }
 }
 
-.raptor-data-point-bar {
-  stroke: none;
-  fill-rule: evenodd;
-  &.raptor-temperature-data-point-bar {
-    fill: #007AFF;
-  }
-  &.raptor-pulse-data-point-bar {
-    fill: #FF3B30;
-  }
-}
+@include chart-styles('raptor');
+// @include chart-styles('raptor-thumbnail');
 
-.raptor-data-line {
-  stroke-width: 2px;
-  &.dotted {
-    stroke-dasharray: 5, 5;
-  }
-  &.raptor-temperature-data-line {
-    stroke: #007AFF;
-  }
-  &.raptor-pulse-data-line {
-    stroke: #FF3B30;
-  }
-}
-
-.cursor-line {
-  &.show {
-    stroke: #000;
-    stroke-width: 1px;
-  }
-}
-
-.tooltip {
-  path {
-    fill: rgba(0, 0, 0, .9);
-  }
-  text {
-    font-size: 10px;
-    fill: #FFF;
-  }
-
-  &.hide {
-    display: none;
-  }
-}
+// .raptor-thumbnail-axis.raptor-thumbnail-x text {
+//   text-anchor: middle;
+//   transform: translate(-13px, 10px);
+// }
