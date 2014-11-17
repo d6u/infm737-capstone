@@ -56,16 +56,21 @@ body {
   .#{$prefix}-data-line {
     stroke-width: 2px;
     &.dotted {
-      stroke-dasharray: 5, 5;
+      // stroke-dasharray: 5, 5;
     }
   }
 
-  .#{$prefix}-title-group-left,
-  .#{$prefix}-title-group-right {
-    text {
-      text-anchor: middle;
-    }
-  }
+  // .#{$prefix}-title-group-left {
+  //   text {
+  //     text-anchor: begin;
+  //   }
+  // }
+
+  // .#{$prefix}-title-group-right {
+  //   text {
+  //     text-anchor: end;
+  //   }
+  // }
 
   .cursor-line {
     &.show {
@@ -110,5 +115,13 @@ body {
 }
 
 @include chart-styles('raptor');
+
 @include data-group-style('raptor', 'temperature', #007AFF);
+
+.raptor-temperature-data-line {
+  stroke-dasharray: 5, 5;
+}
+
 @include data-group-style('raptor', 'pulse', #FF3B30);
+
+.raptor-pulse-data-line {}

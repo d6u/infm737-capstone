@@ -64,7 +64,8 @@
         id: 'pulse',
         position: 'right',
         title: 'Pulse',
-        classPrefix: 'pulse-'
+        classPrefix: 'pulse-',
+        displayLegend: true
     });
 
     chart.drawData(temperatureData, {
@@ -76,7 +77,8 @@
             var m = /(\d+(\.\d)?)\d*/.exec(v);
             return (m[2] ? m[1] : m[1] + '.0') + '°F';
         },
-        yAxisTickCount: 10
+        yAxisTickCount: 10,
+        displayLegend: true
     });
 </script>
 </body>

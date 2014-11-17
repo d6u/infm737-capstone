@@ -503,18 +503,48 @@ window.RaptorChart = (function () {
 
             // Add Axis Title
             //
-            canvas.append('g')
+            var axisTitleTransform = options.position === 'left' ?
+                translateStr(-opts.margin.left + 16, 0) + ' rotate(-90)' :
+                translateStr(opts.margin.right - 16, 0) + ' rotate(90)';
+
+            var axisTitleGroup = canvas.append('g')
                 .attr({
                     'class': mainPf('title-group-' + options.position) + ' ' + groupPf('title-group'),
-                    'transform': options.position === 'left' ? translateStr(-opts.margin.left + 16, 0) + ' rotate(-90)' : translateStr(opts.margin.right - 16, 0) + ' rotate(90)'
+                    'transform': axisTitleTransform
+                });
+
+            var textAnchorX = options.position === 'left' ? - opts.height / 2 : opts.height / 2,
+                textAnchorY = options.position === 'left' ? 0 : - opts.width;
+
+            var axisTitleTextAnchor;
+            if (options.displayLegend) {
+                axisTitleTextAnchor = options.position === 'left' ? 'begin' : 'end';
+            } else {
+                axisTitleTextAnchor = 'middle';
+            }
+
+            axisTitleGroup.append('text')
+                .style({
+                    'text-anchor': axisTitleTextAnchor
                 })
-                .append('text')
-                .style({'text-anchor': ''})
                 .attr({
-                    'x': options.position === 'left' ? - opts.height / 2 : opts.height / 2,
-                    'y': options.position === 'left' ? 0 : - opts.width
+                    'x': textAnchorX,
+                    'y': textAnchorY
                 })
                 .html(options.title);
+
+            if (options.displayLegend) {
+                var legendLineY = textAnchorY - 4;
+
+                axisTitleGroup.append('line')
+                    .attr({
+                        'class': groupPf('data-line'),
+                        'x1': options.position === 'left' ? textAnchorX - 10 : textAnchorX + 10,
+                        'y1': legendLineY,
+                        'x2': options.position === 'left' ? textAnchorX - 60 : textAnchorX + 60,
+                        'y2': legendLineY
+                    });
+            }
 
             // Tooltips
             //
