@@ -42,7 +42,8 @@ body {
 
     &.#{$prefix}-x text {
       text-anchor: end;
-      transform: translate(-5px, 0px) rotate(-45deg);
+      // Doesn't work in IE 9, so set it as attribute
+      // transform: translate(-5px, 0px) rotate(-45deg);
     }
   }
 

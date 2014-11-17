@@ -303,7 +303,9 @@ window.RaptorChart = (function () {
 
             x.domain(xDomain);
             xAxisG.transition().duration(300).call(xAxis);
-            xAxisG.selectAll('text').style({'text-anchor': ''});
+            xAxisG.selectAll('text')
+                .style({'text-anchor': ''})
+                .attr({'transform': 'translate(-5, 0) rotate(-45)'});
 
             mouseoverG.selectAll('rect').remove();
             mouseoverG.selectAll('rect')
@@ -524,14 +526,17 @@ window.RaptorChart = (function () {
             }
 
             axisTitleGroup.append('text')
-                .style({
-                    'text-anchor': axisTitleTextAnchor
-                })
                 .attr({
                     'x': textAnchorX,
                     'y': textAnchorY
                 })
-                .html(options.title);
+                .text(options.title);
+
+            // Set text-anchor only when it's not `begin`,
+            // otherwise IE 9 will throw error
+            if (axisTitleTextAnchor !== 'begin') {
+                axisTitleGroup.style({'text-anchor': axisTitleTextAnchor});
+            }
 
             if (options.displayLegend) {
                 var legendLineY = textAnchorY - 4;
@@ -577,7 +582,14 @@ window.RaptorChart = (function () {
 
                     cursorTooltip1.classed({hide: false});
                     cursorTooltip1.setTransform(x - 20, y);
-                    cursorTooltip1.setVal(options.labelFormatter(roundTemperature(y1Inverse(y))));
+
+                    var val;
+                    if (options.labelFormatter) {
+                        val = options.labelFormatter(roundTemperature(y1Inverse(y)));
+                    } else {
+                        val = roundTemperature(y1Inverse(y));
+                    }
+                    cursorTooltip1.setVal(val);
 
                     if (Object.keys(_this.summaryData).length > 1) {
                         if (!cursorTooltip2) {
